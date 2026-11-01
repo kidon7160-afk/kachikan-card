@@ -211,6 +211,7 @@ svg .ink{stroke:var(--ink)}
 .tut .skip{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:.76rem;padding:6px}
 .tut .pop .skip{color:var(--ink);opacity:.7}
 .sheet .sample{font-size:.76rem;background:#fff;border:2px dashed var(--ink);border-radius:10px;padding:6px 10px;margin:0 0 14px}
+.bubble .thk{display:block;margin-top:3px;font-size:.72rem;opacity:.65}
 .ptstrip{background:var(--paper);border:2px solid var(--ink);border-radius:12px;padding:7px 10px;font-size:.74rem;min-height:56px}
 .ptstrip b{font-weight:700}
 .ptstrip .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
@@ -592,7 +593,7 @@ function startGame(){
   S.cur=S.deck.pop();S.turn=S.first;
   ["me","pt"].forEach(function(w){
     S.p[w].g={hand:[],discard:[],swap:false,decision:null,order:[],reason:"",result:null};
-    S.p[w].screen="game";S.p[w].consent=false;S.p[w].tut=(w==="me")?0:null;
+    S.p[w].screen="game";S.p[w].consent=false;S.p[w].tut=(w==="me"||TUT_BOTH)?0:null;
   });
 }
 function decide(w,text){
@@ -818,6 +819,7 @@ function liveBox(w){
 
 
 /* ---------- first-time guide (spotlight) ---------- */
+var TUT_BOTH=false;
 var TUT=[
   {intro:true},
   {sel:[".zone.op"],pad:[4,-12,8,-12],text:"ここに相手の様子が出るよ。吹き出しは相手が今したこと、下の並びは相手が残しているカード。"},
@@ -961,15 +963,18 @@ function surveyView(w){
 function partnerStrip(w){
   var o=other(w),on=PERSONA[o].name,og=S.p[o].g;
   if(!og)return "";
+  var g0=S.p[w].g;
   var s='<div class="ptstrip"><b>'+esc(on)+'さんの様子</b>';
   /* result of the previous card is always shown once both have decided */
   s+='<div>'+(S.round?'前の「'+esc(word(S.round.card))+'」：あなた '+esc(S.round[w])+' / '+esc(on)+'さん '+esc(S.round[o]):'最初のカードです')+'</div>';
   /* this card: the later decider may or may not see the earlier decision (switch above) */
   var od=og.decision;
   if(S.cur!=null){
+    var md=g0&&g0.decision;
+    if(md&&md.card===S.cur)s+='<div>今回のあなた：「'+esc(word(S.cur))+'」を'+esc(md.text)+'</div>';
     if(od&&od.card===S.cur)s+='<div>今回：'+(S.showMoves?'「'+esc(word(S.cur))+'」を'+esc(od.text):'決め終わりました')+'</div>';
     else if(S.turn===w)s+='<div>今回：あなたが先に決める番です</div>';
-    else s+='<div>今回：考えています</div>';
+    else s+='<div>今回：'+esc(on)+'さんが考えています</div>';
   }
   s+='<div class="chips">'+(og.hand.length?og.hand.map(function(i){return "<span>"+esc(word(i))+"</span>"}).join(""):"<span>まだ何も持っていません</span>")+'</div>';
   return s+'</div>';
@@ -997,7 +1002,10 @@ function partnerBubble(w){
   if(S.cur!=null&&od&&od.card===S.cur){
     return S.showMoves?{t:say(od.card,od.text)}:{t:"決め終わったよ",dim:1};
   }
-  if(S.cur!=null&&S.turn===o)return {t:"考えているよ…",dim:1};
+  if(S.cur!=null&&S.turn===o){
+    if(S.round)return {t:say(S.round.card,S.round[o])+'<small class="thk">いまは「'+esc(word(S.cur))+'」を考えているよ…</small>'};
+    return {t:"考えているよ…",dim:1};
+  }
   if(S.round)return {t:say(S.round.card,S.round[o])};
   return {t:"最初のカードだよ。いっしょに考えよう",dim:1};
 }
@@ -1164,6 +1172,7 @@ async function saveRecords(){
 var QS=new URLSearchParams(location.search);
 var MOCK=QS.get("mock")==="1",PREFIX="kachikan-card-";
 var ROLE=null,IS_HOST=false,LOG=[],SEQ=0,TX=null,CONNECTED=false,CODE="";
+TUT_BOTH=true;
 var LOCAL_ONLY={openSheet:1,closeSheet:1,openShare:1,closeShare:1,shareCards:1,saveShare:1,openProfile:1,closeProfile:1,openSurvey:1,closeSurvey:1,svSet:1,openOwnFromResult:1,fillSuggest:1,tutNext:1,tutSkip:1};
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function $(id){return document.getElementById(id)}
