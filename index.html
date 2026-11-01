@@ -1003,7 +1003,7 @@ function partnerBubble(w){
     return S.showMoves?{t:say(od.card,od.text)}:{t:"決め終わったよ",dim:1};
   }
   if(S.cur!=null&&S.turn===o){
-    if(S.round)return {t:say(S.round.card,S.round[o])+'<small class="thk">いまは「'+esc(word(S.cur))+'」を考えているよ…</small>'};
+    if(S.round)return {t:say(S.round.card,S.round[o])};
     return {t:"考えているよ…",dim:1};
   }
   if(S.round)return {t:say(S.round.card,S.round[o])};
