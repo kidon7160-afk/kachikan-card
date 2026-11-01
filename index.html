@@ -102,13 +102,13 @@ svg .ink{stroke:var(--ink)}
 .msg.theirs{align-self:flex-start;background:#fff;border:1px solid var(--host-line);border-bottom-left-radius:4px}
 .sys{align-self:center;font-size:.72rem;color:var(--muted);background:#fff;border:1px solid var(--host-line);padding:3px 12px;border-radius:999px}
 .cardsmsg{
-  max-width:90%;background:var(--base);color:var(--ink);border:2.5px solid var(--ink);border-radius:16px;padding:9px 11px;box-shadow:3px 3px 0 var(--ink);
+  max-width:90%;background:#fff;color:var(--ink);border:2.5px solid var(--ink);border-radius:16px;padding:9px 11px;box-shadow:3px 3px 0 var(--ink);
 }
 .cardsmsg.mine{align-self:flex-end;border-bottom-right-radius:4px}
 .cardsmsg.theirs{align-self:flex-start;border-bottom-left-radius:4px}
 .cardsmsg h4{font-family:var(--f-display);font-weight:900;font-size:.8rem;margin:0 0 6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.cardsmsg h4 .tpill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 12px 3px 7px;color:#1a1a1a}
-.cardsmsg h4 .ti{height:22px;width:auto;max-width:30px;object-fit:contain;filter:drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)}
+.cardsmsg h4 .tpill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 12px 3px 7px}
+.cardsmsg h4 .ti{height:22px;width:auto;max-width:30px;object-fit:contain}
 .cardsmsg h4 .tt{color:inherit}
 .cardsmsg .cc{display:flex;flex-wrap:wrap;gap:5px}
 .cardsmsg .cc span{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:2px 9px 2px 3px;font-size:.76rem;font-weight:700}
@@ -900,7 +900,7 @@ function chatView(w){
     else if(m.type==="invite")msgs+=(i===lastInv?inviteBlock(w,m):'<div class="sys">価値観カードのお誘い(見送り済み)</div>');
     else if(m.type==="cards"){
       var mine=m.from===w;
-      msgs+='<div class="cardsmsg '+(mine?"mine":"theirs")+'"><h4><span>'+(mine?"あなた":esc(PERSONA[m.from].name)+"さん")+'が残した5枚</span>'+(m.top?'<span class="tpill'+""+'" style="background:'+TYPE_ICON[m.top]+'"><img class="ti" alt="" src="'+IMG["icon_"+m.top]+'"><span class="tt">'+esc(TYPES[m.top].name)+'タイプ</span></span>':'')+'</h4><div class="cc">'+
+      msgs+='<div class="cardsmsg '+(mine?"mine":"theirs")+'"><h4><span>'+(mine?"あなた":esc(PERSONA[m.from].name)+"さん")+'が残した5枚</span>'+(m.top?'<span class="tpill" style="background:'+tint(TYPE_ICON[m.top],.2)+';color:'+TYPE_TEXT[m.top]+'"><img class="ti" alt="" src="'+IMG["icon_"+m.top]+'"><span class="tt">'+esc(TYPES[m.top].name)+'タイプ</span></span>':'')+'</h4><div class="cc">'+
         m.items.map(function(x,k){return '<span><i>'+(k+1)+'</i>'+esc(x)+'</span>'}).join("")+'</div>'+
         (m.reason?'<div class="rs">'+esc(m.reason)+'</div>':'')+'</div>';
     }
@@ -1013,6 +1013,7 @@ function cardList(ordered){
 }
 function tint(hex,a){var n=parseInt(hex.slice(1),16),r=n>>16&255,g=n>>8&255,b=n&255;function m(c){return Math.round(c*a+255*(1-a))}return 'rgb('+m(r)+','+m(g)+','+m(b)+')'}
 var TYPE_ICON={onri:"#FFD016",earth:"#04BF77",logica:"#E466A8",chroni:"#EB786F",link:"#34BCDE",move:"#A179E9"};
+var TYPE_TEXT={onri:"#EDA500",earth:"#04BF77",logica:"#E466A8",chroni:"#EB786F",link:"#34BCDE",move:"#A179E9"};
 var TYPE_COLOR={onri:"#F5C92A",earth:"#04BF77",logica:"#E466A8",chroni:"#EB786F",link:"#3FC0DE",move:"#8F5CFF"};
 function star(c,x,y,sz,rot){return '<svg class="rstar" style="left:'+x+'%;top:'+y+'px;width:'+sz+'px;height:'+sz+'px;transform:rotate('+rot+'deg)" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.5l3 7.2 7.7.6-5.9 5 1.9 7.5L12 17.7 5.3 21.8l1.9-7.5-5.9-5 7.7-.6z"/></svg>'}
 function resultView(w){
