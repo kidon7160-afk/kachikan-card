@@ -115,7 +115,19 @@ svg .ink{stroke:var(--ink)}
 .cardsmsg .cc span{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:2px 9px 2px 3px;font-size:.76rem;font-weight:700}
 .cardsmsg .cc i{font-style:normal;width:16px;height:16px;border-radius:50%;background:var(--accent2);color:#fff;font-size:.62rem;display:inline-flex;align-items:center;justify-content:center;font-weight:900}
 .cardsmsg .rs{margin-top:7px;font-size:.74rem;border-top:1.5px dashed var(--ink);padding-top:6px}
-.suggest{padding:0 12px 8px}
+.suggest{padding:0 12px 8px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.svcard{width:100%;box-sizing:border-box;background:#fff;border:2.5px solid var(--ink);border-radius:16px;padding:10px 12px;box-shadow:3px 3px 0 var(--ink);display:flex;flex-direction:column;gap:4px;font-size:.78rem}
+.svcard b{font-weight:900;font-size:.84rem}.svcard span{color:var(--muted)}
+.svcard .gbtn{align-self:flex-end;margin-top:4px}.svcard.done{box-shadow:none;border-style:dashed}
+.svbody{overflow-y:auto;padding:14px 14px 24px;display:flex;flex-direction:column;gap:16px}
+.svnote{font-size:.72rem;color:var(--muted);margin:0;line-height:1.6}
+.svq{display:flex;flex-direction:column;gap:8px;font-size:.84rem}
+.svscale{display:flex;gap:6px}
+.svb{flex:1;height:40px;border-radius:12px;border:2px solid var(--ink);background:#fff;font:inherit;font-weight:900;color:var(--ink)}
+.svb.on{background:var(--accent);color:#fff}
+.svlab{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted)}
+.svq textarea{border:2px solid var(--ink);border-radius:12px;padding:9px 11px;font:inherit;font-size:.84rem;resize:none;background:#fff;color:var(--ink)}
+.svsend{align-self:stretch;padding:11px}
 .suggest button{
   font-size:.78rem;font-weight:700;padding:6px 14px;border-radius:999px;border:1.5px dashed var(--host);background:var(--host-soft);color:var(--host);
 }
@@ -556,7 +568,7 @@ function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&am
 var RNG=Math.random;
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(RNG()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 function word(i){return CARDS[i][0]}
-function newPhone(){return {tut:null,screen:"chat",g:null,consent:false,profileOn:false,profileView:"other",composer:"",sheet:false}}
+function newPhone(){return {tut:null,screen:"chat",g:null,consent:false,profileOn:false,profileView:"other",composer:"",sheet:false,survey:null,svDraft:{a:0,b:0,c:""}}}
 function newState(prev){
   return {
     showMoves:prev?prev.showMoves:true,auto:prev?prev.auto:true,ptConsent:prev?prev.ptConsent:"yes",deckSize:prev?prev.deckSize:44,
@@ -677,6 +689,10 @@ function act(w,name,arg){
     case "closeShare":p.share=null;break;
     case "shareCards":if(p.share){p.share.withCards=!p.share.withCards;p.share.url=null;buildShare(w)}break;
     case "saveShare":saveShare(w);break;
+    case "openSurvey":p.screen="survey";rendered[w]=null;break;
+    case "closeSurvey":p.screen="chat";rendered[w]=null;break;
+    case "svSet":{var kv=String(arg).split(":");if(!p.svDraft)p.svDraft={a:0,b:0,c:""};p.svDraft[kv[0]]=Number(kv[1]);rendered[w]=null;break}
+    case "svSubmit":{var dr=arg||{};if(!dr.a||!dr.b)break;p.survey={a:dr.a,b:dr.b,c:String(dr.c||"").trim().slice(0,500)};p.screen="chat";rendered[w]=null;break}
     case "openProfile":p.profileView=arg;p.screen="profile";break;
     case "closeProfile":p.screen=(g&&g.result&&p.screen==="profile"&&p.fromResult)?"result":"chat";p.fromResult=false;break;
     case "openOwnFromResult":p.profileView="self";p.fromResult=true;p.screen="profile";break;
@@ -910,6 +926,10 @@ function chatView(w){
   msgs+='</div>';
   var blocked=S.playing||S.inviteState==="pending"||S.inviteState==="later";
   var sug=S.revealed?'<div class="suggest"><button type="button" data-act="fillSuggest">続きは会って話してみる？</button></div>':"";
+  if(w==="me"&&S.revealed){
+    sug+=p.survey?'<div class="svcard done"><b>感想を送りました</b><span>ご協力ありがとうございました!</span></div>':
+      '<div class="svcard"><b>体験の感想を教えてください</b><span>3問・1分ほど。今後の改善に使います。</span><button type="button" class="gbtn pri" data-act="openSurvey">答える</button></div>';
+  }
   var comp='<div class="composer"><button class="cardbtn" type="button" data-act="openSheet" aria-label="価値観カードに誘う"'+(blocked?" disabled":"")+'>'+cardIcon()+'</button>'+
     '<input type="text" id="in-'+w+'" data-bind="composer" value="'+esc(p.composer)+'" placeholder="メッセージ" autocomplete="off">'+
     '<button class="send" type="button" data-act="send">送信</button></div>';
@@ -920,6 +940,22 @@ function chatView(w){
       '<div class="row"><button class="gbtn" type="button" data-act="closeSheet">やめる</button><button class="gbtn pri" type="button" data-act="invite">誘う</button></div></div></div>';
   }
   return h+'<div class="pbody">'+msgs+sug+'</div>'+comp+sheet;
+}
+
+function svScale(k,v,lo,hi){
+  var o='<div class="svscale">';
+  for(var i=1;i<=5;i++)o+='<button type="button" class="svb'+(v===i?" on":"")+'" data-act="svSet" data-arg="'+k+':'+i+'" aria-pressed="'+(v===i)+'">'+i+'</button>';
+  return o+'</div><div class="svlab"><span>'+lo+'</span><span>'+hi+'</span></div>';
+}
+function surveyView(w){
+  var p=S.p[w],d=p.svDraft||{a:0,b:0,c:""};
+  return '<div class="hdr"><button class="ic" type="button" data-act="closeSurvey" aria-label="戻る">‹</button><b>体験の感想</b></div>'+
+    '<div class="pbody svbody">'+
+    '<p class="svnote">回答は名前を書かずに、研究・改善の記録として保存されます。答えたくない項目は飛ばしてもかまいません(1・2は選んでから送信できます)。</p>'+
+    '<div class="svq"><b>Q1. 自分の価値観に、新しい気づきがありましたか?</b>'+svScale("a",d.a,"まったくなかった","とてもあった")+'</div>'+
+    '<div class="svq"><b>Q2. 実際のマッチングアプリにこの機能があったら、やってみたいですか?</b>'+svScale("b",d.b,"やりたくない","やってみたい")+'</div>'+
+    '<div class="svq"><b>Q3. 感想を自由に書いてください(任意)</b><textarea id="svc-'+w+'" data-bind="svc" rows="4" maxlength="500" placeholder="気づいたこと、良かった点、気になった点など">'+esc(d.c||"")+'</textarea></div>'+
+    '<button type="button" class="gbtn pri svsend" data-act="svSubmit"'+(d.a&&d.b?"":" disabled")+'>送信する</button></div>';
 }
 
 function partnerStrip(w){
@@ -1069,7 +1105,7 @@ function profileView(w){
 var rendered={me:null,pt:null};
 function render(w,force){
   var p=S.p[w],el=document.getElementById("phone-"+w);
-  if(!force&&p.screen==="reason"&&rendered[w]==="reason")return;
+  if(!force&&(p.screen==="reason"||p.screen==="survey")&&rendered[w]===p.screen)return;
   var inner;
   switch(p.screen){
     case "game":inner=statusBar()+gameView(w);break;
@@ -1079,6 +1115,7 @@ function render(w,force){
     case "result":inner=statusBar()+resultView(w);break;
     case "shared":inner=statusBar()+'<div class="hdr"><b>お互いの5枚</b></div>'+sharedView(w);break;
     case "profile":inner=statusBar()+profileView(w);break;
+    case "survey":inner=statusBar()+surveyView(w);break;
     default:inner=statusBar()+chatView(w);
   }
   if(p.screen==='game')inner+=liveBox(w);
@@ -1106,6 +1143,7 @@ function snapshot(){
     guestCards:m.cards,guestType:m.type,guestReason:m.reason,guestConsent:S.p.me.consent?"はい":"いいえ",
     opCards:o.cards,opReason:o.reason,opConsent:S.p.pt.consent?"はい":"いいえ",
     live:S.live.map(function(x){return (x.from==="me"?"お客さん":"運営")+":"+x.text}).join(" / "),
+    svA:S.p.me.survey?S.p.me.survey.a:"",svB:S.p.me.survey?S.p.me.survey.b:"",svC:S.p.me.survey?S.p.me.survey.c:"",
     memo:document.getElementById("c-memo").value.trim()};
 }
 function pushSession(){var sn=snapshot();if(sn){SESS.push(sn);document.getElementById("c-memo").value=""}updateSaveLabel()}
@@ -1115,8 +1153,8 @@ async function saveRecords(){
   var rows=SESS.slice(),cur=snapshot();if(cur)rows.push(cur);
   var msg=document.getElementById("c-save");
   if(!rows.length){msg.textContent="記録はまだありません";setTimeout(updateSaveLabel,1500);return}
-  var head=["日時","相手の判断を見せる設定","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","観察メモ"];
-  var keys=["time","moves","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","memo"];
+  var head=["日時","相手の判断を見せる設定","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","アンケートQ1新しい気づき(1-5)","アンケートQ2やってみたい(1-5)","アンケートQ3感想","観察メモ"];
+  var keys=["time","moves","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","svA","svB","svC","memo"];
   var csv="﻿"+[head].concat(rows.map(function(r){return keys.map(function(k){return r[k]})})).map(function(r){return r.map(csvCell).join(",")}).join("\r\n");
   try{await saveBlob("kachikan-booth-records.csv",csv);msg.textContent="保存しました"}catch(e){}
   setTimeout(updateSaveLabel,1500);
@@ -1126,7 +1164,7 @@ async function saveRecords(){
 var QS=new URLSearchParams(location.search);
 var MOCK=QS.get("mock")==="1",PREFIX="kachikan-card-";
 var ROLE=null,IS_HOST=false,LOG=[],SEQ=0,TX=null,CONNECTED=false,CODE="";
-var LOCAL_ONLY={openSheet:1,closeSheet:1,openShare:1,closeShare:1,shareCards:1,saveShare:1,openProfile:1,closeProfile:1,openOwnFromResult:1,fillSuggest:1,tutNext:1,tutSkip:1};
+var LOCAL_ONLY={openSheet:1,closeSheet:1,openShare:1,closeShare:1,shareCards:1,saveShare:1,openProfile:1,closeProfile:1,openSurvey:1,closeSurvey:1,svSet:1,openOwnFromResult:1,fillSuggest:1,tutNext:1,tutSkip:1};
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function $(id){return document.getElementById(id)}
 function applyEntry(e){
@@ -1149,6 +1187,7 @@ function dispatch(name,arg){
   if(name==="send"){arg=p.composer||"";if(!arg.trim())return;p.composer=""}
   if(name==="liveSend"){arg=p.liveText||"";if(!arg.trim())return;p.liveText=""}
   if(name==="reasonDone")arg=p.g?p.g.reason:"";
+  if(name==="svSubmit"){var dd=p.svDraft||{};if(!dd.a||!dd.b)return;arg={a:dd.a,b:dd.b,c:dd.c||""}}
   submit({w:ROLE,name:name,arg:arg});
 }
 function onMessage(m){
@@ -1261,6 +1300,7 @@ stage.addEventListener("input",function(e){
   if(t.dataset.bind==="composer")S.p[w].composer=t.value;
   if(t.dataset.bind==="live")S.p[w].liveText=t.value;
   if(t.dataset.bind==="reason"&&S.p[w].g)S.p[w].g.reason=t.value;
+  if(t.dataset.bind==="svc"){if(!S.p[w].svDraft)S.p[w].svDraft={a:0,b:0,c:""};S.p[w].svDraft.c=t.value}
 });
 stage.addEventListener("keydown",function(e){
   var t=e.target;if(e.isComposing)return;
