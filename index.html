@@ -1219,8 +1219,17 @@ function onMessage(m){
   if(m.t==="req"&&IS_HOST){var e=m.e;if(!e||typeof e.name!=="string")return;submit({w:"me",name:e.name,arg:e.arg})}
   else if(m.t==="act"&&!IS_HOST){applyEntry(m.e)}
   else if(m.t==="sync"&&!IS_HOST){
+    var old=S&&S.p&&S.p[ROLE]?S.p[ROLE]:null;
     S=newState();rendered={me:null,pt:null};
-    m.log.forEach(function(e){applyEntry(e)});renderAll();
+    m.log.forEach(function(e){applyEntry(e)});
+    /* keep what this device was doing locally (survey screen, drafts) across a reconnect */
+    if(old){
+      var np=S.p[ROLE];
+      if(old.svDraft)np.svDraft=old.svDraft;
+      if(old.composer)np.composer=old.composer;
+      if(old.screen==="survey"&&np.screen==="chat"&&!np.survey)np.screen="survey";
+    }
+    renderAll();
   }
 }
 function setConnected(on){
@@ -1299,8 +1308,9 @@ function startHost(code,restore){
     mk();
     setInterval(function(){
       if(TX)TX({t:"ping"});
-      if(cur&&CONNECTED&&Date.now()-lastRx>10000){try{cur.close()}catch(e){}cur=null;TX=null;setConnected(false)}
+      if(cur&&CONNECTED&&!document.hidden&&Date.now()-lastRx>25000){try{cur.close()}catch(e){}cur=null;TX=null;setConnected(false)}
     },3000);
+    document.addEventListener("visibilitychange",function(){lastRx=Date.now()});
   });
 }
 function startGuest(code){
@@ -1344,8 +1354,9 @@ function startGuest(code){
     mk();
     setInterval(function(){
       if(TX)TX({t:"ping"});
-      if(conn&&CONNECTED&&Date.now()-lastRx>10000){try{conn.close()}catch(e){}conn=null;TX=null;setConnected(false);schedule()}
+      if(conn&&CONNECTED&&!document.hidden&&Date.now()-lastRx>25000){try{conn.close()}catch(e){}conn=null;TX=null;setConnected(false);schedule()}
     },3000);
+    document.addEventListener("visibilitychange",function(){lastRx=Date.now()});
   });
 }
 
