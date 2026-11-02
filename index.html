@@ -125,6 +125,8 @@ svg .ink{stroke:var(--ink)}
 .svscale{display:flex;gap:6px}
 .svb{flex:1;height:40px;border-radius:12px;border:2px solid var(--ink);background:#fff;font:inherit;font-weight:900;color:var(--ink)}
 .svb.on{background:var(--accent);color:#fff}
+.svages{display:flex;flex-wrap:wrap;gap:6px}
+.svb.age{flex:0 0 auto;height:36px;padding:0 12px;font-size:.78rem}
 .svlab{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted)}
 .svq textarea{border:2px solid var(--ink);border-radius:12px;padding:9px 11px;font:inherit;font-size:.84rem;resize:none;background:#fff;color:var(--ink)}
 .svsend{align-self:stretch;padding:11px}
@@ -491,6 +493,7 @@ body.net{background:var(--host-bg)}
   <button class="gbtn pri" id="j-enter" type="button">入る</button>
   <div class="msg" id="j-msg" role="status"></div>
   <button class="linkbtn" id="j-host" type="button">運営の方はこちら</button>
+  <button class="linkbtn" id="j-resume" type="button" hidden>前回の続きから再開する</button>
 </div>
 
 <div id="hostwait" class="join" hidden>
@@ -569,7 +572,7 @@ function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&am
 var RNG=Math.random;
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(RNG()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 function word(i){return CARDS[i][0]}
-function newPhone(){return {tut:null,screen:"chat",g:null,consent:false,profileOn:false,profileView:"other",composer:"",sheet:false,survey:null,svDraft:{a:0,b:0,c:""}}}
+function newPhone(){return {tut:null,screen:"chat",g:null,consent:false,profileOn:false,profileView:"other",composer:"",sheet:false,survey:null,svDraft:{g:0,h:0,a:0,b:0,c:""}}}
 function newState(prev){
   return {
     showMoves:prev?prev.showMoves:true,auto:prev?prev.auto:true,ptConsent:prev?prev.ptConsent:"yes",deckSize:prev?prev.deckSize:44,
@@ -692,8 +695,8 @@ function act(w,name,arg){
     case "saveShare":saveShare(w);break;
     case "openSurvey":p.screen="survey";rendered[w]=null;break;
     case "closeSurvey":p.screen="chat";rendered[w]=null;break;
-    case "svSet":{var kv=String(arg).split(":");if(!p.svDraft)p.svDraft={a:0,b:0,c:""};p.svDraft[kv[0]]=Number(kv[1]);rendered[w]=null;break}
-    case "svSubmit":{var dr=arg||{};if(!dr.a||!dr.b)break;p.survey={a:dr.a,b:dr.b,c:String(dr.c||"").trim().slice(0,500)};p.screen="chat";rendered[w]=null;break}
+    case "svSet":{var kv=String(arg).split(":");if(!p.svDraft)p.svDraft={g:0,h:0,a:0,b:0,c:""};p.svDraft[kv[0]]=Number(kv[1]);rendered[w]=null;break}
+    case "svSubmit":{var dr=arg||{};if(!dr.g||!dr.h||!dr.a||!dr.b)break;p.survey={age:SV_AGES[dr.g-1]||"",h:dr.h,a:dr.a,b:dr.b,c:String(dr.c||"").trim().slice(0,500)};p.screen="chat";rendered[w]=null;break}
     case "openProfile":p.profileView=arg;p.screen="profile";break;
     case "closeProfile":p.screen=(g&&g.result&&p.screen==="profile"&&p.fromResult)?"result":"chat";p.fromResult=false;break;
     case "openOwnFromResult":p.profileView="self";p.fromResult=true;p.screen="profile";break;
@@ -944,20 +947,28 @@ function chatView(w){
   return h+'<div class="pbody">'+msgs+sug+'</div>'+comp+sheet;
 }
 
+var SV_AGES=["10代以下","20代","30代","40代","50代","60代以上","答えたくない"];
+function svAge(v){
+  var o='<div class="svages">';
+  SV_AGES.forEach(function(t,i){o+='<button type="button" class="svb age'+(v===i+1?" on":"")+'" data-act="svSet" data-arg="g:'+(i+1)+'" aria-pressed="'+(v===i+1)+'">'+t+'</button>'});
+  return o+'</div>';
+}
 function svScale(k,v,lo,hi){
   var o='<div class="svscale">';
   for(var i=1;i<=5;i++)o+='<button type="button" class="svb'+(v===i?" on":"")+'" data-act="svSet" data-arg="'+k+':'+i+'" aria-pressed="'+(v===i)+'">'+i+'</button>';
   return o+'</div><div class="svlab"><span>'+lo+'</span><span>'+hi+'</span></div>';
 }
 function surveyView(w){
-  var p=S.p[w],d=p.svDraft||{a:0,b:0,c:""};
+  var p=S.p[w],d=p.svDraft||{g:0,h:0,a:0,b:0,c:""};
   return '<div class="hdr"><button class="ic" type="button" data-act="closeSurvey" aria-label="戻る">‹</button><b>体験の感想</b></div>'+
     '<div class="pbody svbody">'+
-    '<p class="svnote">回答は名前を書かずに、研究・改善の記録として保存されます。答えたくない項目は飛ばしてもかまいません(1・2は選んでから送信できます)。</p>'+
-    '<div class="svq"><b>Q1. 自分の価値観に、新しい気づきがありましたか?</b>'+svScale("a",d.a,"まったくなかった","とてもあった")+'</div>'+
-    '<div class="svq"><b>Q2. 実際のマッチングアプリにこの機能があったら、やってみたいですか?</b>'+svScale("b",d.b,"やりたくない","やってみたい")+'</div>'+
-    '<div class="svq"><b>Q3. 感想を自由に書いてください(任意)</b><textarea id="svc-'+w+'" data-bind="svc" rows="4" maxlength="500" placeholder="気づいたこと、良かった点、気になった点など">'+esc(d.c||"")+'</textarea></div>'+
-    '<button type="button" class="gbtn pri svsend" data-act="svSubmit"'+(d.a&&d.b?"":" disabled")+'>送信する</button></div>';
+    '<p class="svnote">回答は名前を書かずに、研究・改善の記録として保存されます。Q1〜Q4を選ぶと送信できます(年代は「答えたくない」も選べます)。</p>'+
+    '<div class="svq"><b>Q1. 年代を教えてください</b>'+svAge(d.g)+'</div>'+
+    '<div class="svq"><b>Q2. 普段、自分の価値観について考えることはありますか?</b>'+svScale("h",d.h,"ほとんど考えない","よく考える")+'</div>'+
+    '<div class="svq"><b>Q3. 体験して、自分の価値観に新しい気づきがありましたか?</b>'+svScale("a",d.a,"まったくなかった","とてもあった")+'</div>'+
+    '<div class="svq"><b>Q4. 実際のマッチングアプリにこの機能があったら、やってみたいですか?</b>'+svScale("b",d.b,"やりたくない","やってみたい")+'</div>'+
+    '<div class="svq"><b>Q5. 感想を自由に書いてください(任意)</b><textarea id="svc-'+w+'" data-bind="svc" rows="4" maxlength="500" placeholder="気づいたこと、良かった点、気になった点など">'+esc(d.c||"")+'</textarea></div>'+
+    '<button type="button" class="gbtn pri svsend" data-act="svSubmit"'+(d.g&&d.h&&d.a&&d.b?"":" disabled")+'>送信する</button></div>';
 }
 
 function partnerStrip(w){
@@ -1151,18 +1162,18 @@ function snapshot(){
     guestCards:m.cards,guestType:m.type,guestReason:m.reason,guestConsent:S.p.me.consent?"はい":"いいえ",
     opCards:o.cards,opReason:o.reason,opConsent:S.p.pt.consent?"はい":"いいえ",
     live:S.live.map(function(x){return (x.from==="me"?"お客さん":"運営")+":"+x.text}).join(" / "),
-    svA:S.p.me.survey?S.p.me.survey.a:"",opA:S.p.pt.survey?S.p.pt.survey.a:"",opB:S.p.pt.survey?S.p.pt.survey.b:"",opC:S.p.pt.survey?S.p.pt.survey.c:"",svB:S.p.me.survey?S.p.me.survey.b:"",svC:S.p.me.survey?S.p.me.survey.c:"",
+    svG:S.p.me.survey?S.p.me.survey.age:"",svH:S.p.me.survey?S.p.me.survey.h:"",svA:S.p.me.survey?S.p.me.survey.a:"",opG:S.p.pt.survey?S.p.pt.survey.age:"",opH:S.p.pt.survey?S.p.pt.survey.h:"",opA:S.p.pt.survey?S.p.pt.survey.a:"",opB:S.p.pt.survey?S.p.pt.survey.b:"",opC:S.p.pt.survey?S.p.pt.survey.c:"",svB:S.p.me.survey?S.p.me.survey.b:"",svC:S.p.me.survey?S.p.me.survey.c:"",
     memo:document.getElementById("c-memo").value.trim()};
 }
-function pushSession(){var sn=snapshot();if(sn){SESS.push(sn);document.getElementById("c-memo").value=""}updateSaveLabel()}
+function pushSession(){var sn=snapshot();if(sn){SESS.push(sn);document.getElementById("c-memo").value=""}updateSaveLabel();if(typeof saveHost==="function")saveHost()}
 function updateSaveLabel(){var cur=snapshot()?1:0;document.getElementById("c-save").textContent="記録を保存("+(SESS.length+cur)+"件)"}
 function csvCell(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'}
 async function saveRecords(){
   var rows=SESS.slice(),cur=snapshot();if(cur)rows.push(cur);
   var msg=document.getElementById("c-save");
   if(!rows.length){msg.textContent="記録はまだありません";setTimeout(updateSaveLabel,1500);return}
-  var head=["日時","相手の判断を見せる設定","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","アンケートQ1新しい気づき(1-5)","アンケートQ2やってみたい(1-5)","アンケートQ3感想","運営側アンケートQ1","運営側アンケートQ2","運営側アンケートQ3","観察メモ"];
-  var keys=["time","moves","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","svA","svB","svC","opA","opB","opC","memo"];
+  var head=["日時","相手の判断を見せる設定","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","アンケート年代","アンケート普段考える(1-5)","アンケート新しい気づき(1-5)","アンケートやってみたい(1-5)","アンケート感想","運営側アンケート年代","運営側アンケート普段考える(1-5)","運営側アンケート新しい気づき(1-5)","運営側アンケートやってみたい(1-5)","運営側アンケート感想","観察メモ"];
+  var keys=["time","moves","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","svG","svH","svA","svB","svC","opG","opH","opA","opB","opC","memo"];
   var csv="﻿"+[head].concat(rows.map(function(r){return keys.map(function(k){return r[k]})})).map(function(r){return r.map(csvCell).join(",")}).join("\r\n");
   try{await saveBlob("kachikan-booth-records.csv",csv);msg.textContent="保存しました"}catch(e){}
   setTimeout(updateSaveLabel,1500);
@@ -1185,8 +1196,12 @@ function applyEntry(e){
   }finally{RNG=Math.random}
   if(IS_HOST)updateSaveLabel();
 }
+var KEEP_MS=6*3600*1000;
+function lsGet(k){try{var v=JSON.parse(localStorage.getItem(k)||"null");return v&&Date.now()-v.t<KEEP_MS?v:null}catch(e){return null}}
+function lsSet(k,v){try{v.t=Date.now();localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function saveHost(){if(IS_HOST&&!MOCK)lsSet("kc-host",{code:CODE,log:LOG,sess:SESS})}
 function submit(e){
-  if(IS_HOST){e.seed=1+Math.floor(Math.random()*2000000000);e.n=++SEQ;LOG.push(e);applyEntry(e);if(TX)TX({t:"act",e:e})}
+  if(IS_HOST){e.seed=1+Math.floor(Math.random()*2000000000);e.n=++SEQ;LOG.push(e);applyEntry(e);saveHost();if(TX)TX({t:"act",e:e})}
   else if(TX)TX({t:"req",e:e});
 }
 function dispatch(name,arg){
@@ -1196,7 +1211,7 @@ function dispatch(name,arg){
   if(name==="send"){arg=p.composer||"";if(!arg.trim())return;p.composer=""}
   if(name==="liveSend"){arg=p.liveText||"";if(!arg.trim())return;p.liveText=""}
   if(name==="reasonDone")arg=p.g?p.g.reason:"";
-  if(name==="svSubmit"){var dd=p.svDraft||{};if(!dd.a||!dd.b)return;arg={a:dd.a,b:dd.b,c:dd.c||""}}
+  if(name==="svSubmit"){var dd=p.svDraft||{};if(!dd.g||!dd.h||!dd.a||!dd.b)return;arg={g:dd.g,h:dd.h,a:dd.a,b:dd.b,c:dd.c||""}}
   submit({w:ROLE,name:name,arg:arg});
 }
 function onMessage(m){
@@ -1228,8 +1243,14 @@ function loadScript(urls,done){
 }
 
 /* transport: mock (BroadcastChannel, for local testing) or PeerJS */
-function startHost(code){
-  CODE=code;IS_HOST=true;ROLE="pt";S=newState();LOG=[];SEQ=0;
+function startHost(code,restore){
+  CODE=code;ROLE="pt";S=newState();LOG=[];SEQ=0;IS_HOST=false;
+  if(restore){
+    SESS=[];
+    (restore.log||[]).forEach(function(e){LOG.push(e);SEQ=Math.max(SEQ,e.n||0);applyEntry(e)});
+    SESS=restore.sess||[];
+  }
+  IS_HOST=true;
   $("join").hidden=true;$("hostwait").hidden=false;$("h-code").textContent=code;
   var url=location.href.split("?")[0]+"?c="+code;
   loadScript(["https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"],function(ok){
@@ -1249,16 +1270,37 @@ function startHost(code){
   }
   loadScript(["https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js","https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"],function(ok){
     if(!ok){$("h-msg").textContent="通信の部品を読み込めませんでした。ネットワークを確認してください。";return}
-    var peer=new Peer(PREFIX+code);
-    peer.on("error",function(err){
-      if(err&&err.type==="unavailable-id"){startHost(String(1000+Math.floor(Math.random()*9000)))}
-      else $("h-msg").textContent="接続に問題があります。もう一度お試しください。";
-    });
-    peer.on("connection",function(c){
-      c.on("open",function(){onGuest(function(m){try{c.send(m)}catch(e){}})});
-      c.on("data",onMessage);
-      c.on("close",function(){TX=null;setConnected(false)});
-    });
+    var peer=null,cur=null,lastRx=0,idTries=0;
+    function mk(){
+      peer=new Peer(PREFIX+code);
+      peer.on("open",function(){idTries=0;saveHost()});
+      peer.on("disconnected",function(){setTimeout(function(){try{if(peer&&!peer.destroyed)peer.reconnect()}catch(e){}},1500)});
+      peer.on("close",function(){setTimeout(mk,2000)});
+      peer.on("error",function(err){
+        var t=err&&err.type;
+        if(t==="unavailable-id"){
+          if(restore&&idTries++<20){try{peer.destroy()}catch(e){}$("h-msg").textContent="前回の部屋を復元しています…";return}
+          startHost(String(1000+Math.floor(Math.random()*9000)));
+        }else if(t==="network"||t==="server-error"||t==="socket-error"||t==="socket-closed"){
+          setTimeout(function(){try{if(peer&&peer.disconnected&&!peer.destroyed)peer.reconnect()}catch(e){}},2500)
+        }else if(t!=="peer-unavailable"){$("h-msg").textContent="接続に問題があります。つなぎ直しています…"}
+      });
+      peer.on("connection",function(c){
+        c.on("open",function(){
+          if(cur&&cur!==c){try{cur.close()}catch(e){}}
+          cur=c;lastRx=Date.now();
+          onGuest(function(m){try{c.send(m)}catch(e){}});
+        });
+        c.on("data",function(m){lastRx=Date.now();onMessage(m)});
+        c.on("close",function(){if(cur===c){cur=null;TX=null;setConnected(false)}});
+        c.on("error",function(){});
+      });
+    }
+    mk();
+    setInterval(function(){
+      if(TX)TX({t:"ping"});
+      if(cur&&CONNECTED&&Date.now()-lastRx>10000){try{cur.close()}catch(e){}cur=null;TX=null;setConnected(false)}
+    },3000);
   });
 }
 function startGuest(code){
@@ -1272,21 +1314,38 @@ function startGuest(code){
     setTimeout(function(){setConnected(true)},50);
     return;
   }
+  if(!MOCK)lsSet("kc-guest",{code:code});
   loadScript(["https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js","https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"],function(ok){
     if(!ok){$("j-msg").textContent="通信の部品を読み込めませんでした。";return}
-    var peer=new Peer();var tries=0;
-    function connect(){
-      var c=peer.connect(PREFIX+code,{reliable:true});
-      var opened=false;
-      c.on("open",function(){opened=true;tries=0;TX=function(m){try{c.send(m)}catch(e){}};setConnected(true)});
-      c.on("data",onMessage);
-      c.on("close",function(){TX=null;setConnected(false);setTimeout(connect,2000)});
-      c.on("error",function(){});
-      setTimeout(function(){if(!opened){try{c.close()}catch(e){}
-        if(!CONNECTED){tries++;$("j-msg").textContent=tries>2?"つながりません。コードを確認してください。":"つないでいます…";if(tries<=5)setTimeout(connect,1000)}}},6000);
+    var peer=null,conn=null,timer=null,lastRx=0,everOpen=false;
+    function schedule(){if(timer)return;timer=setTimeout(function(){timer=null;if(!CONNECTED)connect()},2500)}
+    function mk(){
+      peer=new Peer();
+      peer.on("open",function(){connect()});
+      peer.on("disconnected",function(){setTimeout(function(){try{if(peer&&!peer.destroyed)peer.reconnect()}catch(e){}},1500)});
+      peer.on("close",function(){setTimeout(mk,2000)});
+      peer.on("error",function(err){
+        var t=err&&err.type;
+        if(t==="peer-unavailable"){$("j-msg").textContent=everOpen?"相手の部屋を探しています…":"このコードの部屋が見つかりません。";schedule()}
+        else schedule();
+      });
     }
-    peer.on("open",connect);
-    peer.on("error",function(err){if(err&&err.type==="peer-unavailable"){$("j-msg").textContent="このコードの部屋が見つかりません。"}});
+    function connect(){
+      if(CONNECTED||!peer||peer.destroyed)return;
+      if(peer.disconnected){try{peer.reconnect()}catch(e){}schedule();return}
+      if(conn){try{conn.close()}catch(e){}}
+      var c=peer.connect(PREFIX+code,{reliable:true});conn=c;var opened=false;
+      c.on("open",function(){opened=true;everOpen=true;lastRx=Date.now();TX=function(m){try{c.send(m)}catch(e){}};setConnected(true)});
+      c.on("data",function(m){lastRx=Date.now();onMessage(m)});
+      c.on("close",function(){if(conn!==c)return;conn=null;TX=null;setConnected(false);schedule()});
+      c.on("error",function(){});
+      setTimeout(function(){if(!opened&&conn===c){try{c.close()}catch(e){}conn=null;schedule()}},6000);
+    }
+    mk();
+    setInterval(function(){
+      if(TX)TX({t:"ping"});
+      if(conn&&CONNECTED&&Date.now()-lastRx>10000){try{conn.close()}catch(e){}conn=null;TX=null;setConnected(false);schedule()}
+    },3000);
   });
 }
 
@@ -1309,7 +1368,7 @@ stage.addEventListener("input",function(e){
   if(t.dataset.bind==="composer")S.p[w].composer=t.value;
   if(t.dataset.bind==="live")S.p[w].liveText=t.value;
   if(t.dataset.bind==="reason"&&S.p[w].g)S.p[w].g.reason=t.value;
-  if(t.dataset.bind==="svc"){if(!S.p[w].svDraft)S.p[w].svDraft={a:0,b:0,c:""};S.p[w].svDraft.c=t.value}
+  if(t.dataset.bind==="svc"){if(!S.p[w].svDraft)S.p[w].svDraft={g:0,h:0,a:0,b:0,c:""};S.p[w].svDraft.c=t.value}
 });
 stage.addEventListener("keydown",function(e){
   var t=e.target;if(e.isComposing)return;
@@ -1334,6 +1393,13 @@ $("c-reset").addEventListener("click",function(){submit({w:ROLE,name:"reset"});$
 
 S=newState();
 document.body.className="net";
+(function(){
+  var h=lsGet("kc-host");
+  if(h&&h.code&&!QS.get("host")&&!QS.get("c")){$("j-resume").hidden=false;$("j-resume").textContent="前回の続きから再開する(コード "+h.code+")";
+    $("j-resume").addEventListener("click",function(){startHost(h.code,h)})}
+  var g=lsGet("kc-guest");
+  if(g&&g.code&&!QS.get("c")&&!$("j-code").value){$("j-code").value=g.code;$("j-msg").textContent="前回のコードを入れておきました。「入る」を押してください。"}
+})();
 if(QS.get("host")){var hc=QS.get("host");startHost(/^\d{4}$/.test(hc)?hc:String(1000+Math.floor(Math.random()*9000)))}
 else if(/^\d{4}$/.test(QS.get("c")||"")){$("j-code").value=QS.get("c");startGuest(QS.get("c"))}
 })();
