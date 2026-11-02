@@ -928,7 +928,7 @@ function chatView(w){
   msgs+='</div>';
   var blocked=S.playing||S.inviteState==="pending"||S.inviteState==="later";
   var sug=S.revealed?'<div class="suggest"><button type="button" data-act="fillSuggest">続きは会って話してみる？</button></div>':"";
-  if(w==="me"&&S.revealed){
+  if(S.revealed){
     sug+=p.survey?'<div class="svcard done"><b>感想を送りました</b><span>ご協力ありがとうございました!</span></div>':
       '<div class="svcard"><b>体験の感想を教えてください</b><span>3問・1分ほど。今後の改善に使います。</span><button type="button" class="gbtn pri" data-act="openSurvey">答える</button></div>';
   }
@@ -1151,7 +1151,7 @@ function snapshot(){
     guestCards:m.cards,guestType:m.type,guestReason:m.reason,guestConsent:S.p.me.consent?"はい":"いいえ",
     opCards:o.cards,opReason:o.reason,opConsent:S.p.pt.consent?"はい":"いいえ",
     live:S.live.map(function(x){return (x.from==="me"?"お客さん":"運営")+":"+x.text}).join(" / "),
-    svA:S.p.me.survey?S.p.me.survey.a:"",svB:S.p.me.survey?S.p.me.survey.b:"",svC:S.p.me.survey?S.p.me.survey.c:"",
+    svA:S.p.me.survey?S.p.me.survey.a:"",opA:S.p.pt.survey?S.p.pt.survey.a:"",opB:S.p.pt.survey?S.p.pt.survey.b:"",opC:S.p.pt.survey?S.p.pt.survey.c:"",svB:S.p.me.survey?S.p.me.survey.b:"",svC:S.p.me.survey?S.p.me.survey.c:"",
     memo:document.getElementById("c-memo").value.trim()};
 }
 function pushSession(){var sn=snapshot();if(sn){SESS.push(sn);document.getElementById("c-memo").value=""}updateSaveLabel()}
@@ -1161,8 +1161,8 @@ async function saveRecords(){
   var rows=SESS.slice(),cur=snapshot();if(cur)rows.push(cur);
   var msg=document.getElementById("c-save");
   if(!rows.length){msg.textContent="記録はまだありません";setTimeout(updateSaveLabel,1500);return}
-  var head=["日時","相手の判断を見せる設定","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","アンケートQ1新しい気づき(1-5)","アンケートQ2やってみたい(1-5)","アンケートQ3感想","観察メモ"];
-  var keys=["time","moves","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","svA","svB","svC","memo"];
+  var head=["日時","相手の判断を見せる設定","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","アンケートQ1新しい気づき(1-5)","アンケートQ2やってみたい(1-5)","アンケートQ3感想","運営側アンケートQ1","運営側アンケートQ2","運営側アンケートQ3","観察メモ"];
+  var keys=["time","moves","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","svA","svB","svC","opA","opB","opC","memo"];
   var csv="﻿"+[head].concat(rows.map(function(r){return keys.map(function(k){return r[k]})})).map(function(r){return r.map(csvCell).join(",")}).join("\r\n");
   try{await saveBlob("kachikan-booth-records.csv",csv);msg.textContent="保存しました"}catch(e){}
   setTimeout(updateSaveLabel,1500);
