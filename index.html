@@ -520,6 +520,7 @@ body.net{background:var(--host-bg)}
     <button class="cbtn" id="c-close" type="button">閉じる</button>
   </div>
   <small id="op-info" style="color:var(--muted)"></small>
+  <small id="rec-info" style="color:var(--muted)"></small>
 </div></div>
 
 
@@ -1225,12 +1226,51 @@ async function saveRecords(){
   var rows=SESS.slice(),cur=snapshot();if(cur)rows.push(cur);
   var msg=document.getElementById("c-save");
   if(!rows.length){msg.textContent="記録はまだありません";setTimeout(updateSaveLabel,1500);return}
-  var head=["日時","相手の判断を見せる設定","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","お客さんが?を押したカード","運営側が?を押したカード","アンケート年代","アンケート普段考える(1-5)","アンケート新しい気づき(1-5)","アンケートやってみたい(1-5)","アンケート感想","運営側アンケート年代","運営側アンケート普段考える(1-5)","運営側アンケート新しい気づき(1-5)","運営側アンケートやってみたい(1-5)","運営側アンケート感想","観察メモ"];
-  var keys=["time","moves","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","helpG","helpO","svG","svH","svA","svB","svC","opG","opH","opA","opB","opC","memo"];
+  var head=REC_HEAD,keys=REC_KEYS;
   var csv="﻿"+[head].concat(rows.map(function(r){return keys.map(function(k){return r[k]})})).map(function(r){return r.map(csvCell).join(",")}).join("\r\n");
   try{await saveBlob("kachikan-booth-records.csv",csv);msg.textContent="保存しました"}catch(e){}
   setTimeout(updateSaveLabel,1500);
 }
+
+/* ---------- cloud records: every play is also sent to one Google Sheet (via Apps Script) ---------- */
+var REC_URL="https://script.google.com/macros/s/AKfycbzuENS0pGfgzHqH6Z4UGuyB2x54pO8dtwZMAigHoY6lvoboaTHjYqVcsk8a19HdVlBc/exec",REC_TOKEN="RINOA";   /* <- paste the web app URL and the passphrase here */
+var REC_HEAD=["日時","相手の判断を見せる設定","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","お客さんが?を押したカード","運営側が?を押したカード","アンケート年代","アンケート普段考える(1-5)","アンケート新しい気づき(1-5)","アンケートやってみたい(1-5)","アンケート感想","運営側アンケート年代","運営側アンケート普段考える(1-5)","運営側アンケート新しい気づき(1-5)","運営側アンケートやってみたい(1-5)","運営側アンケート感想","観察メモ"];
+var REC_KEYS=["time","moves","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","helpG","helpO","svG","svH","svA","svB","svC","opG","opH","opA","opB","opC","memo"];
+var PLAYKEY="",recTimer=null,recBusy=false;
+function recQ(){try{return JSON.parse(localStorage.getItem("kc-rec-q")||"{}")}catch(e){return {}}}
+function recQSet(q){try{localStorage.setItem("kc-rec-q",JSON.stringify(q))}catch(e){}}
+function recLabel(){
+  var el=document.getElementById("rec-info");if(!el)return;
+  if(!REC_URL){el.textContent="クラウド保存: 未設定(この端末のメモリだけに貯まります)";return}
+  var n=Object.keys(recQ()).length;
+  el.textContent=n?"クラウド保存: 送信待ち "+n+" 件(つながると自動で送ります)":"クラウド保存: すべて送信済み";
+}
+function recQueue(sn,key){
+  if(!REC_URL||!sn||!key)return;
+  var f={};REC_KEYS.forEach(function(k,i){f[REC_HEAD[i]]=sn[k]==null?"":sn[k]});
+  f["接続コード"]=CODE;
+  var q=recQ();q[key]={token:REC_TOKEN,id:key,fields:f};recQSet(q);recLabel();
+  if(!recTimer)recTimer=setTimeout(function(){recTimer=null;recFlush()},1500);
+}
+async function recSend(p){
+  var body=JSON.stringify(p),opt={method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:body};
+  try{var r=await fetch(REC_URL,opt);var j=await r.json();return !!(j&&j.ok)}
+  catch(e){
+    /* the response may be unreadable (CORS) even though the sheet was updated; the sheet de-duplicates by id, so one more blind send is safe */
+    try{await fetch(REC_URL,{method:"POST",mode:"no-cors",headers:opt.headers,body:body});return true}catch(e2){return false}
+  }
+}
+async function recFlush(){
+  if(recBusy||!REC_URL)return;recBusy=true;
+  try{
+    var q=recQ();
+    for(var id in q){
+      if(await recSend(q[id])){var q2=recQ();if(JSON.stringify(q2[id])===JSON.stringify(q[id]))delete q2[id];recQSet(q2)}else break;
+    }
+  }finally{recBusy=false;recLabel();if(Object.keys(recQ()).length)setTimeout(recFlush,20000)}
+}
+window.addEventListener("online",function(){recFlush()});
+setTimeout(function(){recLabel();recFlush()},1500);
 
 /* ---------- network: host is the sequencer, both sides replay the same log ---------- */
 var QS=new URLSearchParams(location.search);
@@ -1241,13 +1281,14 @@ var LOCAL_ONLY={openSheet:1,closeSheet:1,openShare:1,closeShare:1,shareCards:1,s
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function $(id){return document.getElementById(id)}
 function applyEntry(e){
+  if(!PLAYKEY)PLAYKEY=CODE+"-"+e.seed;
   RNG=mulberry(e.seed||1);
   try{
     if(e.name==="cfg"){S.showMoves=!!e.arg.showMoves;S.deckSize=e.arg.deckSize||44;refresh()}
-    else if(e.name==="reset"){if(IS_HOST)pushSession();S=newState(S);rendered={me:null,pt:null};renderAll()}
+    else if(e.name==="reset"){if(IS_HOST){recQueue(snapshot(),PLAYKEY);pushSession()}PLAYKEY=CODE+"-"+e.seed;S=newState(S);rendered={me:null,pt:null};renderAll()}
     else act(e.w,e.name,e.arg);
   }finally{RNG=Math.random}
-  if(IS_HOST)updateSaveLabel();
+  if(IS_HOST){updateSaveLabel();if(e.name!=="reset"&&e.name!=="cfg")recQueue(snapshot(),PLAYKEY)}
 }
 var KEEP_MS=6*3600*1000;
 function lsGet(k){try{var v=JSON.parse(localStorage.getItem(k)||"null");return v&&Date.now()-v.t<KEEP_MS?v:null}catch(e){return null}}
@@ -1447,9 +1488,10 @@ $("j-enter").addEventListener("click",function(){
 });
 $("j-code").addEventListener("keydown",function(e){if(e.key==="Enter")$("j-enter").click()});
 $("j-host").addEventListener("click",function(){startHost(String(1000+Math.floor(Math.random()*9000)))});
-$("opbtn").addEventListener("click",function(){$("oppanel").hidden=false;updateSaveLabel();$("op-info").textContent="接続コード "+CODE});
+$("opbtn").addEventListener("click",function(){$("oppanel").hidden=false;recLabel();updateSaveLabel();$("op-info").textContent="接続コード "+CODE});
 $("c-close").addEventListener("click",function(){$("oppanel").hidden=true});
 $("c-save").addEventListener("click",saveRecords);
+$("c-memo").addEventListener("change",function(){if(IS_HOST)recQueue(snapshot(),PLAYKEY)});
 function sendCfg(){submit({w:ROLE,name:"cfg",arg:{showMoves:$("c-moves").checked,deckSize:Number($("c-deck").value)}})}
 $("c-moves").addEventListener("change",sendCfg);
 $("c-deck").addEventListener("change",sendCfg);
