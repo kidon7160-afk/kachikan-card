@@ -964,7 +964,7 @@ function surveyView(w){
     '<div class="pbody svbody">'+
     '<p class="svnote">回答は名前を書かずに、研究・改善の記録として保存されます。Q1〜Q4を選ぶと送信できます(年代は「答えたくない」も選べます)。</p>'+
     '<div class="svq"><b>Q1. 年代を教えてください</b>'+svAge(d.g)+'</div>'+
-    '<div class="svq"><b>Q2. 普段、自分の価値観について考えることはありますか?</b>'+svScale("h",d.h,"ほとんど考えない","よく考える")+'</div>'+
+    '<div class="svq"><b>Q2. 普段、買い物における価値観について考えることはありますか?</b>'+svScale("h",d.h,"ほとんど考えない","よく考える")+'</div>'+
     '<div class="svq"><b>Q3. 体験して、自分の価値観に新しい気づきがありましたか?</b>'+svScale("a",d.a,"まったくなかった","とてもあった")+'</div>'+
     '<div class="svq"><b>Q4. 実際のマッチングアプリにこの機能があったら、やってみたいですか?</b>'+svScale("b",d.b,"やりたくない","やってみたい")+'</div>'+
     '<div class="svq"><b>Q5. 感想を自由に書いてください(任意)</b><textarea id="svc-'+w+'" data-bind="svc" rows="4" maxlength="500" placeholder="気づいたこと、良かった点、気になった点など">'+esc(d.c||"")+'</textarea></div>'+
