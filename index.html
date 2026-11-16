@@ -402,6 +402,19 @@ body.net{background:var(--host-bg)}
 .net .status{display:none}
 .net .hdr,.net .game{padding-top:max(10px,env(safe-area-inset-top))}
 .net .game{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+.net.role-watch{background:#2A1F3D}
+.net.role-watch .page{height:100vh}
+.net.role-watch .stage{display:flex;gap:2vw;justify-content:center;align-items:center;height:100vh;padding-top:44px;box-sizing:border-box}
+.net.role-watch .phone-col{display:block;position:relative}
+.net.role-watch .phone{width:44vw;height:calc(100vh - 110px);height:calc(100dvh - 110px);border:3px solid #FBF6F4;border-radius:22px;overflow:hidden;pointer-events:none;user-select:none}
+.net.role-watch .phone-col::before{display:block;margin:0 0 8px;font:700 1.05rem/1.4 var(--f-body);color:#F4CDD2;text-align:center}
+.net.role-watch .phone-col[data-who=pt]::before{content:"ホストのiPad(QRを出した方)"}
+.net.role-watch .phone-col[data-who=me]::before{content:"ゲストのiPad(コードを入れた方)"}
+.net.role-watch .tut,.net.role-watch #opbtn{display:none!important}
+#wbar{position:fixed;left:0;right:0;top:0;height:40px;z-index:40;display:flex;gap:18px;align-items:center;justify-content:center;background:#1E1450;color:#FBF6F4;font:700 .9rem/1 var(--f-body)}
+#wbar[hidden]{display:none}
+#wbar i{display:inline-block;width:12px;height:12px;border-radius:50%;background:#7a6fa0;margin-right:6px;vertical-align:-1px}
+#wbar i.on{background:#04BF77}
 .join{position:fixed;inset:0;z-index:50;background:var(--base);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font-family:var(--f-body)}
 .join[hidden]{display:none}
 .join h1{font-family:var(--f-display);font-weight:900;font-size:1.6rem;margin:0;color:var(--accent)}
@@ -494,6 +507,7 @@ body.net{background:var(--host-bg)}
   </main>
 </div>
 
+<div id="wbar" hidden><span><i id="wb-pt"></i>ホストのiPad</span><span><i id="wb-me"></i>ゲストのiPad</span><span id="wb-note"></span></div>
 <div id="netbar" hidden>接続が切れました。つなぎ直しています…</div>
 
 <div id="join" class="join">
@@ -503,6 +517,7 @@ body.net{background:var(--host-bg)}
   <button class="gbtn pri" id="j-enter" type="button">入る</button>
   <div class="msg" id="j-msg" role="status"></div>
   <button class="linkbtn" id="j-host" type="button">運営の方はこちら</button>
+  <button class="linkbtn" id="j-watch" type="button">見守り用(PC・モニター)で入る</button>
   <button class="linkbtn" id="j-resume" type="button" hidden>前回の続きから再開する</button>
 </div>
 
@@ -512,6 +527,7 @@ body.net{background:var(--host-bg)}
   <div id="qr"></div>
   <div class="big" id="h-code">----</div>
   <div class="msg" id="h-msg" role="status">相手を待っています…</div>
+  <small id="h-watch" style="color:var(--muted);word-break:break-all;max-width:34ch"></small>
 </div>
 
 <button id="opbtn" type="button" hidden>運営メニュー</button>
@@ -519,6 +535,7 @@ body.net{background:var(--host-bg)}
   <b>運営メニュー</b>
   <label><input type="checkbox" id="c-moves" checked> 先に決めた人の判断を、後の人に見せる</label>
   <label>山札 <select id="c-deck"><option value="28" selected>28枚版(厳選)</option><option value="42">42枚版(全カード)</option></select></label>
+  <input type="text" id="c-watchurl" readonly aria-label="見守り用URL(PCのブラウザで開く)" style="font-size:.7rem">
   <input type="text" id="c-memo" placeholder="観察メモ(この回の記録に入ります)" aria-label="観察メモ">
   <div class="row">
     <button class="cbtn" id="c-save" type="button">記録を保存(0件)</button>
@@ -1097,7 +1114,7 @@ function gameView(w){
   for(var i=0;i<5;i++)h+=i<og.hand.length?'<span>'+esc(word(og.hand[i]))+'</span>':'<span class="e">&nbsp;</span>';
   h+='</div></div><div class="zone me"><div class="g-top"><b>価値観カード</b><span>山札残り '+left+'枚</span></div>';
   if(S.cur!=null){
-    h+='<div class="drawn'+(mine?'':' wait')+'"><small>'+(mine?'あなたの番':esc(on)+'さんの番')+'</small><div class="w">'+esc(word(S.cur))+'</div>'+(hintOf(S.cur)?'<button class="qbtn'+(S.p[w].hint===S.cur?' on':'')+'" type="button" data-act="'+(S.p[w].hint===S.cur?'helpClose':'help')+'" aria-label="このカードのヒント" aria-expanded="'+(S.p[w].hint===S.cur)+'">?</button>'+(S.p[w].hint===S.cur?'<div class="wh">'+esc(hintOf(S.cur))+'</div>':''):'')+'</div>';
+    h+='<div class="drawn'+(mine?'':' wait')+'"><small>'+(mine?'あなたの番':esc(on)+'さんの番')+'</small><div class="w">'+esc(word(S.cur))+'</div>'+(hintOf(S.cur)?'<div class="wh">'+esc(hintOf(S.cur))+'</div>':'')+'</div>';
     if(!mine){
       h+='<div class="prompt">'+esc(on)+'さんが決めるのを待っています</div><div class="zlabel">あなたが残したカード</div>'+handList(w,false);
     }else if(g.swap){
@@ -1291,6 +1308,8 @@ setTimeout(function(){recLabel();recFlush()},1500);
 var QS=new URLSearchParams(location.search);
 var MOCK=QS.get("mock")==="1",PREFIX="kachikan-card-";
 var ROLE=null,IS_HOST=false,LOG=[],SEQ=0,TX=null,CONNECTED=false,CODE="";
+var WATCHERS=[];
+function bcast(m){WATCHERS.forEach(function(w){try{w.send(m)}catch(e){}})}
 TUT_BOTH=true;
 var LOCAL_ONLY={openSheet:1,closeSheet:1,openShare:1,closeShare:1,shareCards:1,saveShare:1,openProfile:1,closeProfile:1,openSurvey:1,closeSurvey:1,helpClose:1,svSet:1,openOwnFromResult:1,fillSuggest:1,tutNext:1,tutSkip:1};
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -1310,7 +1329,7 @@ function lsGet(k){try{var v=JSON.parse(localStorage.getItem(k)||"null");return v
 function lsSet(k,v){try{v.t=Date.now();localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function saveHost(){if(IS_HOST&&!MOCK)lsSet("kc-host",{code:CODE,log:LOG,sess:SESS})}
 function submit(e){
-  if(IS_HOST){e.seed=1+Math.floor(Math.random()*2000000000);e.n=++SEQ;LOG.push(e);applyEntry(e);saveHost();if(TX)TX({t:"act",e:e})}
+  if(IS_HOST){e.seed=1+Math.floor(Math.random()*2000000000);e.n=++SEQ;LOG.push(e);applyEntry(e);saveHost();if(TX)TX({t:"act",e:e});bcast({t:"act",e:e})}
   else if(TX)TX({t:"req",e:e});
 }
 function dispatch(name,arg){
@@ -1325,6 +1344,7 @@ function dispatch(name,arg){
 }
 function onMessage(m){
   if(!m)return;
+  if(m.t==="presence"&&ROLE==="watch"){$("wb-pt").className="on";$("wb-me").className=m.guest?"on":"";$("wb-note").textContent=m.guest?"":"ゲストが未接続です";return}
   if(m.t==="req"&&IS_HOST){var e=m.e;if(!e||typeof e.name!=="string")return;submit({w:"me",name:e.name,arg:e.arg})}
   else if(m.t==="act"&&!IS_HOST){applyEntry(m.e)}
   else if(m.t==="sync"&&!IS_HOST){
@@ -1343,6 +1363,7 @@ function onMessage(m){
 }
 function setConnected(on){
   var was=CONNECTED;CONNECTED=on;
+  if(IS_HOST)bcast({t:"presence",guest:on});
   $("netbar").hidden=on||!ROLE||$("join").hidden===false||$("hostwait").hidden===false;
   if(on&&!was)enterApp();
   if(!on&&ROLE&&$("join").hidden&&$("hostwait").hidden)$("netbar").hidden=false;
@@ -1351,6 +1372,7 @@ function enterApp(){
   $("join").hidden=true;$("hostwait").hidden=true;
   document.body.className="net role-"+ROLE;
   $("opbtn").hidden=!IS_HOST;
+  $("wbar").hidden=ROLE!=="watch";
   renderAll();
 }
 function loadScript(urls,done){
@@ -1370,6 +1392,7 @@ function startHost(code,restore){
   }
   IS_HOST=true;
   $("join").hidden=true;$("hostwait").hidden=false;$("h-code").textContent=code;
+  var wurl=location.href.split("?")[0]+"?watch="+code;$("h-watch").textContent="PCで見守る場合: "+wurl;$("c-watchurl").value=wurl;
   var url=location.href.split("?")[0]+"?c="+code;
   loadScript(["https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"],function(ok){
     if(ok&&window.QRCode){new QRCode($("qr"),{text:url,width:180,height:180,colorDark:"#2A1F3D",colorLight:"#ffffff"})}else $("qr").style.display="none";
@@ -1382,6 +1405,7 @@ function startHost(code,restore){
     var ch=new BroadcastChannel("kc-"+code);
     ch.onmessage=function(ev){var d=ev.data;if(d.to!=="host")return;
       if(d.t==="hello"){onGuest(function(m){ch.postMessage({to:"guest",m:m})})}
+      else if(d.t==="hello-watch"){var wk={send:function(m){ch.postMessage({to:"watch",m:m})}};WATCHERS.push(wk);wk.send({t:"sync",log:LOG});wk.send({t:"presence",guest:CONNECTED})}
       else if(d.t==="data")onMessage(d.m)};
     $("h-msg").textContent="相手を待っています…(テスト用)";
     return;
@@ -1404,6 +1428,12 @@ function startHost(code,restore){
         }else if(t!=="peer-unavailable"){$("h-msg").textContent="接続に問題があります。つなぎ直しています…"}
       });
       peer.on("connection",function(c){
+        if(c.metadata&&c.metadata.watch){
+          c.on("open",function(){WATCHERS.push(c);try{c.send({t:"sync",log:LOG});c.send({t:"presence",guest:CONNECTED})}catch(e){}});
+          c.on("close",function(){WATCHERS=WATCHERS.filter(function(x){return x!==c})});
+          c.on("error",function(){});
+          return;
+        }
         c.on("open",function(){
           if(cur&&cur!==c){try{cur.close()}catch(e){}}
           cur=c;lastRx=Date.now();
@@ -1417,6 +1447,7 @@ function startHost(code,restore){
     mk();
     setInterval(function(){
       if(TX)TX({t:"ping"});
+      bcast({t:"ping"});
       if(cur&&CONNECTED&&!document.hidden&&Date.now()-lastRx>25000){try{cur.close()}catch(e){}cur=null;TX=null;setConnected(false)}
     },3000);
     document.addEventListener("visibilitychange",function(){lastRx=Date.now()});
@@ -1469,9 +1500,54 @@ function startGuest(code){
   });
 }
 
+function startWatch(code){
+  CODE=code;IS_HOST=false;ROLE="watch";S=newState();
+  $("j-msg").textContent="つないでいます…";
+  if(MOCK){
+    var ch=new BroadcastChannel("kc-"+code);
+    ch.onmessage=function(ev){var d=ev.data;if(d.to!=="watch")return;onMessage(d.m)};
+    ch.postMessage({to:"host",t:"hello-watch"});
+    setTimeout(function(){setConnected(true)},50);
+    return;
+  }
+  loadScript(["https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js","https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"],function(ok){
+    if(!ok){$("j-msg").textContent="通信の部品を読み込めませんでした。";return}
+    var peer=null,conn=null,timer=null,lastRx=0,everOpen=false;
+    function schedule(){if(timer)return;timer=setTimeout(function(){timer=null;if(!CONNECTED)connect()},2500)}
+    function mk(){
+      peer=new Peer();
+      peer.on("open",function(){connect()});
+      peer.on("disconnected",function(){setTimeout(function(){try{if(peer&&!peer.destroyed)peer.reconnect()}catch(e){}},1500)});
+      peer.on("close",function(){setTimeout(mk,2000)});
+      peer.on("error",function(err){
+        var t=err&&err.type;
+        if(t==="peer-unavailable"){$("j-msg").textContent=everOpen?"ホストの部屋を探しています…":"このコードの部屋が見つかりません。";schedule()}
+        else schedule();
+      });
+    }
+    function connect(){
+      if(CONNECTED||!peer||peer.destroyed)return;
+      if(peer.disconnected){try{peer.reconnect()}catch(e){}schedule();return}
+      if(conn){try{conn.close()}catch(e){}}
+      var c=peer.connect(PREFIX+code,{reliable:true,metadata:{watch:1}});conn=c;var opened=false;
+      c.on("open",function(){opened=true;everOpen=true;lastRx=Date.now();setConnected(true)});
+      c.on("data",function(m){lastRx=Date.now();onMessage(m)});
+      c.on("close",function(){if(conn!==c)return;conn=null;setConnected(false);schedule()});
+      c.on("error",function(){});
+      setTimeout(function(){if(!opened&&conn===c){try{c.close()}catch(e){}conn=null;schedule()}},6000);
+    }
+    mk();
+    setInterval(function(){
+      if(conn&&CONNECTED&&!document.hidden&&Date.now()-lastRx>25000){try{conn.close()}catch(e){}conn=null;setConnected(false);schedule()}
+    },3000);
+    document.addEventListener("visibilitychange",function(){lastRx=Date.now()});
+  });
+}
+
 /* ---------- events ---------- */
 var stage=$("stage");
 stage.addEventListener("click",function(e){
+  if(ROLE==="watch")return;
   var b=e.target.closest("[data-act]");if(!b||b.disabled)return;
   var ph=b.closest(".phone");if(!ph)return;
   var arg=b.dataset.arg;
@@ -1483,6 +1559,7 @@ stage.addEventListener("click",function(e){
   dispatch(name,arg);
 });
 stage.addEventListener("input",function(e){
+  if(ROLE==="watch")return;
   var t=e.target;if(!t.dataset||!t.dataset.bind)return;
   var w=ROLE;
   if(t.dataset.bind==="composer")S.p[w].composer=t.value;
@@ -1491,11 +1568,17 @@ stage.addEventListener("input",function(e){
   if(t.dataset.bind==="svc"){if(!S.p[w].svDraft)S.p[w].svDraft={g:0,h:0,a:0,b:0,c:""};S.p[w].svDraft.c=t.value}
 });
 stage.addEventListener("keydown",function(e){
+  if(ROLE==="watch")return;
   var t=e.target;if(e.isComposing)return;
   if(e.key==="Enter"&&t.dataset&&t.dataset.bind==="live"){S.p[ROLE].liveText=t.value;dispatch("liveSend");return}
   if(e.key==="Enter"&&t.dataset&&t.dataset.bind==="composer"){S.p[ROLE].composer=t.value;dispatch("send")}
 });
 
+$("j-watch").addEventListener("click",function(){
+  var c=$("j-code").value.replace(/\D/g,"");
+  if(c.length!==4){$("j-msg").textContent="ホストのiPadに出ている4桁のコードを入れてから押してください";return}
+  startWatch(c);
+});
 $("j-enter").addEventListener("click",function(){
   var c=$("j-code").value.replace(/\D/g,"");
   if(c.length!==4){$("j-msg").textContent="4桁のコードを入力してください";return}
@@ -1521,7 +1604,7 @@ document.body.className="net";
   var g=lsGet("kc-guest");
   if(g&&g.code&&!QS.get("c")&&!$("j-code").value){$("j-code").value=g.code;$("j-msg").textContent="前回のコードを入れておきました。「入る」を押してください。"}
 })();
-if(QS.get("host")){var hc=QS.get("host");startHost(/^\d{4}$/.test(hc)?hc:String(1000+Math.floor(Math.random()*9000)))}
+if(QS.get("watch")&&/^\d{4}$/.test(QS.get("watch"))){startWatch(QS.get("watch"))}else if(QS.get("host")){var hc=QS.get("host");startHost(/^\d{4}$/.test(hc)?hc:String(1000+Math.floor(Math.random()*9000)))}
 else if(/^\d{4}$/.test(QS.get("c")||"")){$("j-code").value=QS.get("c");startGuest(QS.get("c"))}
 })();
 </script>
