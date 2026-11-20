@@ -142,6 +142,9 @@ svg .ink{stroke:var(--ink)}
   display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:2px 2px 0 var(--ink);padding:0;
 }
 .cardbtn:disabled{opacity:.4;box-shadow:none}
+.cta{padding:8px 12px 0;background:#fff}
+.cta button{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:2.5px solid var(--ink);background:var(--base);color:var(--ink);font-family:inherit;font-weight:900;font-size:.95rem;padding:11px 14px;border-radius:999px;box-shadow:3px 3px 0 var(--ink)}
+.cta button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 .send{border:0;background:var(--host);color:#fff;font-weight:700;font-size:.8rem;padding:9px 14px;border-radius:999px}
 
 /* ---- game module (retro-pop) ---- */
@@ -1028,7 +1031,8 @@ function chatView(w){
     sug+=p.survey?'<div class="svcard done"><b>感想を送りました</b><span>ご協力ありがとうございました!</span></div>':
       '<div class="svcard"><b>体験の感想を教えてください</b><span>3問・1分ほど。今後の改善に使います。</span><button type="button" class="gbtn pri" data-act="openSurvey">答える</button></div>';
   }
-  var comp='<div class="composer"><button class="cardbtn" type="button" data-act="openSheet" aria-label="価値観カードに誘う"'+(blocked?" disabled":"")+'>'+cardIcon()+'</button>'+
+  var cta=(blocked||S.revealed)?"":'<div class="cta"><button type="button" data-act="openSheet">'+cardIcon()+'<span>価値観カードで遊ぼう</span></button></div>';
+  var comp=cta+'<div class="composer">'+
     '<input type="text" id="in-'+w+'" data-bind="composer" value="'+esc(p.composer)+'" placeholder="メッセージ" autocomplete="off">'+
     '<button class="send" type="button" data-act="send">送信</button></div>';
   var sheet="";
@@ -1562,11 +1566,15 @@ function startWatch(code){
 }
 
 /* ---------- solo mode: the app plays the partner (ハル) ---------- */
-var botT=null;
+var botT=null,botAsked=0;
 function pick(a){return a[Math.floor(Math.random()*a.length)]}
 function botNext(){
   if(!S||S.inviteState==="declined")return null;
   if(S.inviteState==="pending"&&S.inviter==="me")return {name:"accept",delay:1800};
+  if(!S.inviteState&&!S.playing){
+    if(botAsked===0)return {name:"send",arg:"よかったら、価値観カードっていうゲーム、いっしょにやってみませんか？",delay:5500};
+    if(botAsked===1)return {name:"invite",delay:1600};
+  }
   if(!S.playing)return null;
   var b=S.p.pt,g=b.g;if(!g)return null;
   var o=S.p.me;
@@ -1590,7 +1598,7 @@ function botSchedule(){
   botT=setTimeout(function(){
     botT=null;
     var n=botNext();
-    if(n)submit({w:"pt",name:n.name,arg:n.arg});
+    if(n){if(n.name==="send"&&botAsked===0)botAsked=1;if(n.name==="invite")botAsked=2;submit({w:"pt",name:n.name,arg:n.arg})}
     else botSchedule();
   },d.delay);
 }
@@ -1598,7 +1606,7 @@ function startSolo(){
   MODE="solo";CODE="ひとり用";ROLE="me";IS_HOST=true;LOG=[];SEQ=0;S=newState();
   S.msgs.push({type:"sys",text:"相手のハルさんは、このアプリが演じています"});
   $("join").hidden=true;$("hostwait").hidden=true;
-  CONNECTED=true;enterApp();
+  CONNECTED=true;enterApp();botSchedule();
 }
 
 /* ---------- events ---------- */
