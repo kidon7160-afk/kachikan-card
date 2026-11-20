@@ -422,6 +422,8 @@ body.net{background:var(--host-bg)}
 .join input{font-family:var(--f-display);font-weight:900;font-size:2rem;letter-spacing:.3em;text-align:center;width:9ch;padding:8px;border:3px solid var(--ink);border-radius:16px;background:#fff;color:var(--ink)}
 .join .big{font-family:var(--f-display);font-weight:900;font-size:3rem;letter-spacing:.25em;background:#fff;border:3px solid var(--ink);border-radius:18px;padding:6px 18px 6px 28px;box-shadow:4px 4px 0 var(--ink)}
 .join .msg{color:var(--accent);font-weight:700;min-height:1.4em}
+.jnote{display:block;color:var(--muted);margin:-4px 0 10px;max-width:40ch;line-height:1.5}
+.jsep{margin-top:18px}
 #qr{background:#fff;padding:10px;border:3px solid var(--ink);border-radius:14px;line-height:0}
 #netbar{position:fixed;left:0;right:0;top:0;z-index:40;text-align:center;font-size:.74rem;font-weight:700;background:#B3261E;color:#fff;padding:3px 8px;padding-top:max(3px,env(safe-area-inset-top))}
 #netbar[hidden]{display:none}
@@ -512,7 +514,12 @@ body.net{background:var(--host-bg)}
 
 <div id="join" class="join">
   <h1>価値観カード</h1>
-  <p>2人で遊ぶ体験版です。相手から教えてもらった4桁のコードを入力してください。</p>
+  <p>買い物で大切にしていることを、カードで選んで話す体験です。</p>
+  <button class="gbtn pri" id="j-solo" type="button">ひとりで体験する</button>
+  <small class="jnote">相手役のハルさんは、アプリが務めます</small>
+  <button class="gbtn" id="j-pair" type="button">友だちと二人で体験する</button>
+  <small class="jnote">それぞれのスマホで。部屋をつくって、友だちにQRを見せてね</small>
+  <p class="jsep">友だちに招待された人は、4桁のコードを入力してください。</p>
   <input id="j-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" aria-label="ルームコード(4桁)" autocomplete="off">
   <button class="gbtn pri" id="j-enter" type="button">入る</button>
   <div class="msg" id="j-msg" role="status"></div>
@@ -1249,7 +1256,7 @@ function snapshot(){
     live:S.live.map(function(x){return (x.from==="me"?"お客さん":"運営")+":"+x.text}).join(" / "),
     helpG:(S.p.me.helps||[]).join("、"),helpO:(S.p.pt.helps||[]).join("、"),
     svG:S.p.me.survey?S.p.me.survey.age:"",svH:S.p.me.survey?S.p.me.survey.h:"",svA:S.p.me.survey?S.p.me.survey.a:"",opG:S.p.pt.survey?S.p.pt.survey.age:"",opH:S.p.pt.survey?S.p.pt.survey.h:"",opA:S.p.pt.survey?S.p.pt.survey.a:"",opB:S.p.pt.survey?S.p.pt.survey.b:"",opC:S.p.pt.survey?S.p.pt.survey.c:"",svB:S.p.me.survey?S.p.me.survey.b:"",svC:S.p.me.survey?S.p.me.survey.c:"",
-    memo:document.getElementById("c-memo").value.trim()};
+    memo:document.getElementById("c-memo").value.trim(),mode:MODE_LABEL[MODE]};
 }
 function pushSession(){var sn=snapshot();if(sn){SESS.push(sn);document.getElementById("c-memo").value=""}updateSaveLabel();if(typeof saveHost==="function")saveHost()}
 function updateSaveLabel(){var cur=snapshot()?1:0;document.getElementById("c-save").textContent="記録を保存("+(SESS.length+cur)+"件)"}
@@ -1266,8 +1273,8 @@ async function saveRecords(){
 
 /* ---------- cloud records: every play is also sent to one Google Sheet (via Apps Script) ---------- */
 var REC_URL="https://script.google.com/macros/s/AKfycbzuENS0pGfgzHqH6Z4UGuyB2x54pO8dtwZMAigHoY6lvoboaTHjYqVcsk8a19HdVlBc/exec",REC_TOKEN="RINOA";   /* <- paste the web app URL and the passphrase here */
-var REC_HEAD=["日時","相手の判断を見せる設定","カード版","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","お客さんが?を押したカード","運営側が?を押したカード","アンケート年代","アンケート普段考える(1-5)","アンケート新しい気づき(1-5)","アンケートやってみたい(1-5)","アンケート感想","運営側アンケート年代","運営側アンケート普段考える(1-5)","運営側アンケート新しい気づき(1-5)","運営側アンケートやってみたい(1-5)","運営側アンケート感想","観察メモ"];
-var REC_KEYS=["time","moves","ver","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","helpG","helpO","svG","svH","svA","svB","svC","opG","opH","opA","opB","opC","memo"];
+var REC_HEAD=["日時","相手の判断を見せる設定","カード版","お客さんの5枚(順位順)","お客さんのタイプ","お客さんの理由","お客さんが見せ合うを選んだ","運営の5枚","運営の理由","運営が見せ合うを選んだ","ライブコメント","お客さんが?を押したカード","運営側が?を押したカード","アンケート年代","アンケート普段考える(1-5)","アンケート新しい気づき(1-5)","アンケートやってみたい(1-5)","アンケート感想","運営側アンケート年代","運営側アンケート普段考える(1-5)","運営側アンケート新しい気づき(1-5)","運営側アンケートやってみたい(1-5)","運営側アンケート感想","観察メモ","体験モード"];
+var REC_KEYS=["time","moves","ver","guestCards","guestType","guestReason","guestConsent","opCards","opReason","opConsent","live","helpG","helpO","svG","svH","svA","svB","svC","opG","opH","opA","opB","opC","memo","mode"];
 var PLAYKEY="",recTimer=null,recBusy=false;
 function recQ(){try{return JSON.parse(localStorage.getItem("kc-rec-q")||"{}")}catch(e){return {}}}
 function recQSet(q){try{localStorage.setItem("kc-rec-q",JSON.stringify(q))}catch(e){}}
@@ -1307,6 +1314,9 @@ setTimeout(function(){recLabel();recFlush()},1500);
 /* ---------- network: host is the sequencer, both sides replay the same log ---------- */
 var QS=new URLSearchParams(location.search);
 var MOCK=QS.get("mock")==="1",PREFIX="kachikan-card-";
+var MODE=QS.get("solo")==="1"?"solo":(QS.get("pair")==="1"?"pair":"booth");
+var MODE_LABEL={booth:"iPad(運営あり)",pair:"スマホ(二人)",solo:"スマホ(ひとり・相手役はアプリ)"};
+if(MODE==="pair")TUT_BOTH=true;
 var ROLE=null,IS_HOST=false,LOG=[],SEQ=0,TX=null,CONNECTED=false,CODE="";
 var WATCHERS=[];
 function bcast(m){WATCHERS.forEach(function(w){try{w.send(m)}catch(e){}})}
@@ -1327,9 +1337,9 @@ function applyEntry(e){
 var KEEP_MS=6*3600*1000;
 function lsGet(k){try{var v=JSON.parse(localStorage.getItem(k)||"null");return v&&Date.now()-v.t<KEEP_MS?v:null}catch(e){return null}}
 function lsSet(k,v){try{v.t=Date.now();localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-function saveHost(){if(IS_HOST&&!MOCK)lsSet("kc-host",{code:CODE,log:LOG,sess:SESS})}
+function saveHost(){if(IS_HOST&&!MOCK&&MODE!=="solo")lsSet("kc-host",{code:CODE,log:LOG,sess:SESS})}
 function submit(e){
-  if(IS_HOST){e.seed=1+Math.floor(Math.random()*2000000000);e.n=++SEQ;LOG.push(e);applyEntry(e);saveHost();if(TX)TX({t:"act",e:e});bcast({t:"act",e:e})}
+  if(IS_HOST){e.seed=1+Math.floor(Math.random()*2000000000);e.n=++SEQ;LOG.push(e);applyEntry(e);saveHost();if(MODE==="solo")botSchedule();if(TX)TX({t:"act",e:e});bcast({t:"act",e:e})}
   else if(TX)TX({t:"req",e:e});
 }
 function dispatch(name,arg){
@@ -1371,7 +1381,7 @@ function setConnected(on){
 function enterApp(){
   $("join").hidden=true;$("hostwait").hidden=true;
   document.body.className="net role-"+ROLE;
-  $("opbtn").hidden=!IS_HOST;
+  $("opbtn").hidden=!IS_HOST||MODE!=="booth";
   $("wbar").hidden=ROLE!=="watch";
   renderAll();
 }
@@ -1393,6 +1403,7 @@ function startHost(code,restore){
   IS_HOST=true;
   $("join").hidden=true;$("hostwait").hidden=false;$("h-code").textContent=code;
   var wurl=location.href.split("?")[0]+"?watch="+code;$("h-watch").textContent="PCで見守る場合: "+wurl;$("c-watchurl").value=wurl;
+  if(MODE==="pair"){document.querySelector("#hostwait h1").textContent="友だちと二人で体験";document.querySelector("#hostwait p").textContent="友だちにこのQRを読み取ってもらうか、コードを伝えてね。つながると、はじまるよ。";$("h-watch").hidden=true}
   var url=location.href.split("?")[0]+"?c="+code;
   loadScript(["https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"],function(ok){
     if(ok&&window.QRCode){new QRCode($("qr"),{text:url,width:180,height:180,colorDark:"#2A1F3D",colorLight:"#ffffff"})}else $("qr").style.display="none";
@@ -1544,6 +1555,46 @@ function startWatch(code){
   });
 }
 
+/* ---------- solo mode: the app plays the partner (ハル) ---------- */
+var botT=null;
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function botNext(){
+  if(!S||S.inviteState==="declined")return null;
+  if(S.inviteState==="pending"&&S.inviter==="me")return {name:"accept",delay:1800};
+  if(!S.playing)return null;
+  var b=S.p.pt,g=b.g;if(!g)return null;
+  var o=S.p.me;
+  if(b.screen==="game"&&S.cur!=null&&S.turn==="pt"){
+    if(g.swap)return {name:"swapTo",arg:Math.floor(Math.random()*5),delay:1400};
+    var keepP=g.hand.length<5?0.5:0.22;
+    return {name:Math.random()<keepP?"keep":"drop",delay:1000+Math.floor(Math.random()*1000)};
+  }
+  if(b.screen==="refill"&&g.hand.length<5&&g.discard.length)return {name:"refill",arg:Math.floor(Math.random()*g.discard.length),delay:1100};
+  if(b.screen==="order"){
+    if(g.order.length<5){var left=[0,1,2,3,4].filter(function(i){return g.order.indexOf(i)<0});return {name:"ord",arg:pick(left),delay:700}}
+    return {name:"orderDone",delay:900};
+  }
+  if(b.screen==="reason")return {name:"reasonDone",arg:pick(BOT_REASONS),delay:2200};
+  if(b.screen==="result"&&!b.consent&&o.consent)return {name:"consent",delay:1500};
+  return null;
+}
+function botSchedule(){
+  if(MODE!=="solo"||botT)return;
+  var d=botNext();if(!d)return;
+  botT=setTimeout(function(){
+    botT=null;
+    var n=botNext();
+    if(n)submit({w:"pt",name:n.name,arg:n.arg});
+    else botSchedule();
+  },d.delay);
+}
+function startSolo(){
+  MODE="solo";CODE="ひとり用";ROLE="me";IS_HOST=true;LOG=[];SEQ=0;S=newState();
+  S.msgs.push({type:"sys",text:"相手のハルさんは、このアプリが演じています"});
+  $("join").hidden=true;$("hostwait").hidden=true;
+  CONNECTED=true;enterApp();
+}
+
 /* ---------- events ---------- */
 var stage=$("stage");
 stage.addEventListener("click",function(e){
@@ -1579,6 +1630,8 @@ $("j-watch").addEventListener("click",function(){
   if(c.length!==4){$("j-msg").textContent="ホストのiPadに出ている4桁のコードを入れてから押してください";return}
   startWatch(c);
 });
+$("j-solo").addEventListener("click",startSolo);
+$("j-pair").addEventListener("click",function(){MODE="pair";TUT_BOTH=true;startHost(String(1000+Math.floor(Math.random()*9000)))});
 $("j-enter").addEventListener("click",function(){
   var c=$("j-code").value.replace(/\D/g,"");
   if(c.length!==4){$("j-msg").textContent="4桁のコードを入力してください";return}
@@ -1604,7 +1657,8 @@ document.body.className="net";
   var g=lsGet("kc-guest");
   if(g&&g.code&&!QS.get("c")&&!$("j-code").value){$("j-code").value=g.code;$("j-msg").textContent="前回のコードを入れておきました。「入る」を押してください。"}
 })();
-if(QS.get("watch")&&/^\d{4}$/.test(QS.get("watch"))){startWatch(QS.get("watch"))}else if(QS.get("host")){var hc=QS.get("host");startHost(/^\d{4}$/.test(hc)?hc:String(1000+Math.floor(Math.random()*9000)))}
+if(MODE==="solo"){startSolo()}else if(MODE==="pair"&&!QS.get("c")){startHost(String(1000+Math.floor(Math.random()*9000)))}
+else if(QS.get("watch")&&/^\d{4}$/.test(QS.get("watch"))){startWatch(QS.get("watch"))}else if(QS.get("host")){var hc=QS.get("host");startHost(/^\d{4}$/.test(hc)?hc:String(1000+Math.floor(Math.random()*9000)))}
 else if(/^\d{4}$/.test(QS.get("c")||"")){$("j-code").value=QS.get("c");startGuest(QS.get("c"))}
 })();
 </script>
