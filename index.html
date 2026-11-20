@@ -142,6 +142,12 @@ svg .ink{stroke:var(--ink)}
   display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:2px 2px 0 var(--ink);padding:0;
 }
 .cardbtn:disabled{opacity:.4;box-shadow:none}
+.composer{position:relative}
+.coach{position:absolute;left:10px;bottom:calc(100% + 12px);z-index:5;background:var(--ink);color:#fff;font-weight:900;font-size:.85rem;line-height:1.4;padding:10px 14px;border-radius:14px;box-shadow:0 4px 14px rgba(42,31,61,.25);animation:coachfloat 1.8s ease-in-out infinite}
+.coach::after{content:"";position:absolute;left:18px;bottom:-8px;width:16px;height:16px;background:var(--ink);transform:rotate(45deg);border-radius:3px}
+.cardbtn.hl{box-shadow:2px 2px 0 var(--ink),0 0 0 5px rgba(228,102,168,.45)}
+@keyframes coachfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.coach{animation:none}}
 .cta{padding:8px 12px 0;background:#fff}
 .cta button{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:2.5px solid var(--ink);background:var(--base);color:var(--ink);font-family:inherit;font-weight:900;font-size:.95rem;padding:11px 14px;border-radius:999px;box-shadow:3px 3px 0 var(--ink)}
 .cta button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
@@ -652,7 +658,7 @@ var HINTS={
 };
 var HAND_HINTS=false; /* hints on kept cards: off for the festival; turn on if visitors ask for them */
 function hintOf(i){return HINTS[CARDS[i][0]]||""}
-function newPhone(){return {tut:null,screen:"chat",g:null,consent:false,profileOn:false,profileView:"other",composer:"",sheet:false,helps:[],hint:null,survey:null,svDraft:{g:0,h:0,a:0,b:0,c:""}}}
+function newPhone(){return {tut:null,screen:"chat",g:null,consent:false,profileOn:false,profileView:"other",composer:"",sheet:false,coach:0,helps:[],hint:null,survey:null,svDraft:{g:0,h:0,a:0,b:0,c:""}}}
 function newState(prev){
   return {
     showMoves:prev?prev.showMoves:true,auto:prev?prev.auto:true,ptConsent:prev?prev.ptConsent:"yes",deckSize:prev?prev.deckSize:28,
@@ -712,7 +718,9 @@ function checkReveal(){
 function act(w,name,arg){
   var p=S.p[w],g=p.g,o=other(w);
   switch(name){
-    case "openSheet":p.sheet=true;break;
+    case "openSheet":p.sheet=true;p.coach=2;break;
+    case "coachShow":if(p.coach===0)p.coach=1;break;
+    case "coachHide":p.coach=2;break;
     case "closeSheet":p.sheet=false;break;
     case "invite":
       p.sheet=false;S.inviter=w;S.inviteState="pending";
@@ -1018,8 +1026,8 @@ function chatView(w){
     sug+=p.survey?'<div class="svcard done"><b>感想を送りました</b><span>ご協力ありがとうございました!</span></div>':
       '<div class="svcard"><b>体験の感想を教えてください</b><span>3問・1分ほど。今後の改善に使います。</span><button type="button" class="gbtn pri" data-act="openSurvey">答える</button></div>';
   }
-  var cta=(blocked||S.revealed)?"":'<div class="cta"><button type="button" data-act="openSheet">'+cardIcon()+'<span>価値観カードで遊ぼう</span></button></div>';
-  var comp=cta+'<div class="composer">'+
+  var coach=(p.coach===1&&!blocked&&!S.revealed&&!p.sheet)?'<div class="coach" data-act="coachHide"><span>ここから価値観カードに誘えるよ</span></div>':"";
+  var comp='<div class="composer">'+coach+'<button class="cardbtn'+(coach?' hl':'')+'" type="button" data-act="openSheet" aria-label="価値観カードに誘う"'+(blocked?" disabled":"")+'>'+cardIcon()+'</button>'+
     '<input type="text" id="in-'+w+'" data-bind="composer" value="'+esc(p.composer)+'" placeholder="メッセージ" autocomplete="off">'+
     '<button class="send" type="button" data-act="send">送信</button></div>';
   var sheet="";
@@ -1315,7 +1323,7 @@ var ROLE=null,IS_HOST=false,LOG=[],SEQ=0,TX=null,CONNECTED=false,CODE="";
 var WATCHERS=[];
 function bcast(m){WATCHERS.forEach(function(w){try{w.send(m)}catch(e){}})}
 TUT_BOTH=true;
-var LOCAL_ONLY={openSheet:1,closeSheet:1,openShare:1,closeShare:1,shareCards:1,saveShare:1,openProfile:1,closeProfile:1,openSurvey:1,closeSurvey:1,helpClose:1,svSet:1,openOwnFromResult:1,fillSuggest:1,tutNext:1,tutSkip:1};
+var LOCAL_ONLY={coachShow:1,coachHide:1,openSheet:1,closeSheet:1,openShare:1,closeShare:1,shareCards:1,saveShare:1,openProfile:1,closeProfile:1,openSurvey:1,closeSurvey:1,helpClose:1,svSet:1,openOwnFromResult:1,fillSuggest:1,tutNext:1,tutSkip:1};
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function $(id){return document.getElementById(id)}
 function applyEntry(e){
@@ -1372,12 +1380,18 @@ function setConnected(on){
   if(on&&!was)enterApp();
   if(!on&&ROLE&&$("join").hidden&&$("hostwait").hidden)$("netbar").hidden=false;
 }
+var coachSched=false;
+function coachTimers(){
+  setTimeout(function(){var p=S&&S.p[ROLE];if(ROLE!=="watch"&&p&&p.coach===0&&!S.inviteState&&!S.playing)dispatch("coachShow")},3500);
+  setTimeout(function(){var p=S&&S.p[ROLE];if(p&&p.coach===1)dispatch("coachHide")},12000);
+}
 function enterApp(){
   $("join").hidden=true;$("hostwait").hidden=true;
   document.body.className="net role-"+ROLE;
   $("opbtn").hidden=!IS_HOST;
   $("wbar").hidden=ROLE!=="watch";
   renderAll();
+  if(!coachSched){coachSched=true;coachTimers()}
 }
 function loadScript(urls,done){
   var i=0;(function next(){
