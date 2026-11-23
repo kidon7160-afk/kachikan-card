@@ -1221,7 +1221,7 @@ function sharedView(w){
   return '<div class="game">'+sharedBlock("あなたの5枚",w)+sharedBlock(PERSONA[o].name+"さんの5枚",o)+
     '<p class="note">どちらが良い・悪いはありません。気になったカードは、理由を聞いてみてください。</p>'+
     '<div class="shdock">'+(S.p[w].survey?'':'<p>最後に、<b>感想を教えてください(1分)</b></p><button class="gbtn pri" type="button" data-act="toSurvey">感想を答える</button>')+
-    '<button class="gbtn'+(S.p[w].survey?' pri':'')+'" type="button" data-act="toChat">チャットに戻る</button></div></div>';
+    (S.p[w].survey?'<button class="gbtn pri" type="button" data-act="toChat">チャットに戻る</button>':'')+'</div></div>';
 }
 function profileView(w){
   var p=S.p[w],t=p.profileView==="self"?w:other(w),pp=S.p[t],name=PERSONA[t].name;
@@ -1596,8 +1596,8 @@ function botNext(){
   if(!S||S.inviteState==="declined")return null;
   if(S.inviteState==="pending"&&S.inviter==="me")return {name:"accept",delay:1800};
   if(!S.inviteState&&!S.playing){
-    if(botAsked===0)return {name:"send",arg:"よかったら、価値観カードっていうゲーム、いっしょにやってみませんか？",delay:5500};
-    if(botAsked===1)return {name:"invite",delay:1600};
+    if(botAsked===0)return {name:"send",arg:"よかったら、価値観カードっていうゲーム、いっしょにやってみませんか？",delay:1800};
+    if(botAsked===1)return {name:"invite",delay:900};
   }
   if(!S.playing)return null;
   var b=S.p.pt,g=b.g;if(!g)return null;
