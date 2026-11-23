@@ -354,7 +354,14 @@ svg .ink{stroke:var(--ink)}
 .res .rshare{text-align:center;font-size:.75rem;font-weight:700;color:var(--accent);margin-top:2px}
 .res .ricons{display:flex;justify-content:center;gap:7px;margin-top:5px}
 .res .ricons button{width:29px;height:29px;border:0;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:.8rem;font-family:Arial,sans-serif}
-.res .rbtns{display:flex;gap:15px;margin-top:6px}
+.res .rdock{position:sticky;bottom:-12px;z-index:5;margin:6px -14px -12px;padding:8px 14px 12px;background:var(--base);border-top:2px solid var(--ink);display:flex;flex-direction:column;gap:7px}
+.res .rnext{margin:0;font-size:.74rem;font-weight:700;color:var(--ink);text-align:center}
+.res .rnext b{color:var(--accent)}
+.res .rbtns{display:flex;gap:15px;margin-top:0}
+.res .rdock .note{margin:0}
+.shdock{position:sticky;bottom:-12px;z-index:5;margin:4px -14px -12px;padding:8px 14px 12px;background:var(--base);border-top:2px solid var(--ink);display:flex;flex-direction:column;gap:7px}
+.shdock p{margin:0;font-size:.74rem;font-weight:700;text-align:center}
+.shdock p b{color:var(--accent)}
 .res .rbtns button{height:37px;border-radius:19px;font-weight:700;font-size:.95rem;font-family:inherit;border:3px solid var(--accent);padding:0 8px}
 .res .rbtns .o{background:#fff;color:var(--accent);flex:0 0 38%}
 .res .rbtns .f{background:var(--accent);color:#fff;flex:1}
@@ -773,8 +780,9 @@ function act(w,name,arg){
     case "consent":p.consent=true;if(S.p[o].g&&S.p[o].g.result)p.screen="shared";break;
     case "withdraw":p.consent=false;break;
     case "endPrivate":p.consent=false;p.screen="chat";break;
+    case "toSurvey":
     case "toChat":
-      p.screen="chat";
+      p.screen=(name==="toSurvey"&&!p.survey)?"survey":"chat";rendered[w]=null;
       if(!S.revealed){
         S.revealed=true;S.msgs.push({type:"sys",text:"お互いの5枚を見せ合いました"});
         ["me","pt"].forEach(function(x){
@@ -1037,7 +1045,7 @@ function chatView(w){
   var sug=S.revealed?'<div class="suggest"><button type="button" data-act="fillSuggest">続きは会って話してみる？</button></div>':"";
   if(S.revealed){
     sug+=p.survey?'<div class="svcard done"><b>感想を送りました</b><span>ご協力ありがとうございました!</span></div>':
-      '<div class="svcard"><b>体験の感想を教えてください</b><span>3問・1分ほど。今後の改善に使います。</span><button type="button" class="gbtn pri" data-act="openSurvey">答える</button></div>';
+      '<div class="svcard"><b>体験の感想を教えてください</b><span>4問と自由記述・1分ほど。今後の改善に使います。</span><button type="button" class="gbtn pri" data-act="openSurvey">答える</button></div>';
   }
   var coach=(p.coach===1&&!blocked&&!S.revealed&&!p.sheet)?'<div class="coach" data-act="coachHide"><span>ここから価値観カードに誘えるよ</span></div>':"";
   var comp='<div class="composer">'+coach+'<button class="cardbtn'+(coach?' hl':'')+'" type="button" data-act="openSheet" aria-label="価値観カードに誘う"'+(blocked?" disabled":"")+'>'+cardIcon()+'</button>'+
@@ -1196,10 +1204,11 @@ function resultView(w){
     '<button type="button" data-act="openShare" aria-label="LINEでシェア(画像をつくる)" style="background:#06C755">L</button>'+
     '<button type="button" data-act="openShare" aria-label="Facebookでシェア(画像をつくる)" style="background:#1877F2">f</button>'+
     '<button type="button" data-act="openShare" aria-label="Xでシェア(画像をつくる)" style="background:#2b2b2b">X</button></div>';
-  h+='<div class="rbtns"><button class="o" type="button" data-act="openShare">画像を保存</button>'+
+  h+='<div class="rdock"><p class="rnext">診断はここまで。このあと <b>①お互いの結果を見る</b> → <b>②感想(1分)</b></p>'+
+    '<div class="rbtns"><button class="o" type="button" data-act="openShare">画像を保存</button>'+
     '<button class="f" type="button" data-act="consent"'+(p.consent?' disabled':'')+'>お互いの結果を見る</button></div>';
   if(p.consent)h+='<p class="note">'+esc(on)+'さんが書き終わるのを待っています。終わると、お互いの5枚が開きます。</p>';
-  return h+'</div>';
+  return h+'</div></div>';
 }
 function sharedBlock(title,w){
   var g=S.p[w].g,r=g.result;
@@ -1211,7 +1220,8 @@ function sharedView(w){
   var o=other(w);
   return '<div class="game">'+sharedBlock("あなたの5枚",w)+sharedBlock(PERSONA[o].name+"さんの5枚",o)+
     '<p class="note">どちらが良い・悪いはありません。気になったカードは、理由を聞いてみてください。</p>'+
-    '<button class="gbtn pri" type="button" data-act="toChat">チャットに戻る</button></div>';
+    '<div class="shdock">'+(S.p[w].survey?'':'<p>最後に、<b>感想を教えてください(1分)</b></p><button class="gbtn pri" type="button" data-act="toSurvey">感想を答える</button>')+
+    '<button class="gbtn'+(S.p[w].survey?' pri':'')+'" type="button" data-act="toChat">チャットに戻る</button></div></div>';
 }
 function profileView(w){
   var p=S.p[w],t=p.profileView==="self"?w:other(w),pp=S.p[t],name=PERSONA[t].name;
