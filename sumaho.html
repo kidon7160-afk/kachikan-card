@@ -767,7 +767,9 @@ function act(w,name,arg){
       if(!g||!g.swap||S.turn!==w)break;
       var out=g.hand[arg];g.hand[arg]=S.cur;g.discard.push(out);
       decide(w,"残した(「"+word(out)+"」と入れ替え)");break;
-    case "cancelSwap":if(g)g.swap=false;break;
+    case "cancelSwap":
+      if(!g||S.cur==null||S.turn!==w)break;
+      g.swap=false;g.discard.push(S.cur);decide(w,"手放した");break;
     case "refill":
       if(!g||g.hand.length>=5)break;
       g.hand.push(g.discard.splice(arg,1)[0]);
@@ -938,9 +940,9 @@ var TUT_BOTH=false;
 var TUT=[
   {intro:true},
   {sel:[".zone.op"],pad:[4,-12,8,-12],text:"ここに相手の様子が出るよ。吹き出しは相手が今したこと、下の並びは相手が残しているカード。"},
-  {sel:[".g-top",".drawn"],pad:[6,6,12,6],text:"これが「価値観カード」。買い物のとき、このことを大切にしたいかな?と考えてみよう。意味がわかりにくいときは、右上の「?」でヒントが見られるよ。"},
+  {sel:[".g-top",".drawn"],pad:[6,6,12,6],text:"これが「価値観カード」。買い物のとき、このことを大切にしたいかな?と考えてみよう。"},
   {sel:[".acts"],pad:[8,6,12,6],text:"大切にしたいなら「残す」、そうでもなければ「手放す」。同じカードを、2人で順番に決めていくよ。"},
-  {sel:[".zone.me .zlabel",".zone.me .hand"],pad:[8,6,8,6],text:"ここがあなたの残したカード。5枚まで持てるよ。山札がなくなったら、大事な順に並べよう。"},
+  {sel:[".zone.me .zlabel",".zone.me .hand"],pad:[8,6,8,6],text:"ここがあなたの残したカード。5枚まで持てるよ。いっぱいになっても、新しいカードを「残す」と、手札の1枚と入れ替えられるよ。山札がなくなったら、大事な順に並べよう。"},
   {sel:[".live .stamps",".live .lvrow"],pad:[10,6,8,6],text:"話しながら進めよう。「わかる」「意外」「迷う」のリアクションや、ひとことで、気になったことを送れるよ。",last:true}
 ];
 var STICKERS=[["onri",68,48,92,-9],["logica",270,52,56,9.5],["link",276,420,54,9.5],["chroni",52,418,72,-7],["move",28,572,76,-7],["earth",272,648,68,3]];
@@ -1060,7 +1062,7 @@ function chatView(w){
   return h+'<div class="pbody">'+msgs+sug+'</div>'+comp+sheet;
 }
 
-var SV_AGES=["10代以下","20代","30代","40代","50代","60代以上","答えたくない"];
+var SV_AGES=["10歳未満","10代","20代","30代","40代","50代","60代以上","答えたくない"];
 function svAge(v){
   var o='<div class="svages">';
   SV_AGES.forEach(function(t,i){o+='<button type="button" class="svb age'+(v===i+1?" on":"")+'" data-act="svSet" data-arg="g:'+(i+1)+'" aria-pressed="'+(v===i+1)+'">'+t+'</button>'});
@@ -1151,10 +1153,10 @@ function gameView(w){
     if(!mine){
       h+='<div class="prompt">'+esc(on)+'さんが決めるのを待っています</div><div class="zlabel">あなたが残したカード</div>'+handList(w,false);
     }else if(g.swap){
-      h+='<div class="prompt">手札がいっぱいです。入れ替えるカードをタップ</div>'+handList(w,true)+
+      h+='<div class="prompt">手放すカードをタップ</div>'+handList(w,true)+
         '<button class="gbtn" type="button" data-act="cancelSwap">やっぱり残さない</button>';
     }else{
-      h+='<div class="acts"><button class="gbtn" type="button" data-act="drop">手放す</button><button class="gbtn pri" type="button" data-act="keep">残す</button></div><div class="zlabel">あなたが残したカード</div>'+handList(w,false);
+      h+='<div class="acts"><button class="gbtn" type="button" data-act="drop">手放す</button><button class="gbtn pri" type="button" data-act="keep">'+(g.hand.length>=5?'残す(1枚と入れ替え)':'残す')+'</button></div>'+'<div class="zlabel">あなたが残したカード</div>'+handList(w,false);
     }
   }
   h+='<div class="sp"></div><div style="text-align:left"><button class="linkbtn" type="button" data-act="quit">ここでやめる</button></div></div></div>';
