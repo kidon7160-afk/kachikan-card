@@ -1153,7 +1153,7 @@ function gameView(w){
     if(!mine){
       h+='<div class="prompt">'+esc(on)+'さんが決めるのを待っています</div><div class="zlabel">あなたが残したカード</div>'+handList(w,false);
     }else if(g.swap){
-      h+='<div class="prompt">手放すカードをタップ</div>'+handList(w,true)+
+      h+='<div class="prompt">手札がいっぱいです。入れ替えるカードをタップ</div>'+handList(w,true)+
         '<button class="gbtn" type="button" data-act="cancelSwap">やっぱり残さない</button>';
     }else{
       h+='<div class="acts"><button class="gbtn" type="button" data-act="drop">手放す</button><button class="gbtn pri" type="button" data-act="keep">'+(g.hand.length>=5?'残す(1枚と入れ替え)':'残す')+'</button></div>'+'<div class="zlabel">あなたが残したカード</div>'+handList(w,false);
